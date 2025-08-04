@@ -280,7 +280,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({
-                    team: window.currentTeamName // ou le nom d'équipe en cours (tu dois définir window.currentTeamName)
+                    team: window.currentTeamName // nom d'équipe en cours
                 })
             })
             .then(r => r.json())
