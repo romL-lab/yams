@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yam's - Feuille de Score</title>
+	<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+      .scores-box {
+        display: flex;
+        flex-direction: row;
+        gap: 30px;
+        justify-content: center;
+        align-items: center;
+        margin: 18px 0 28px 0;
+        background: #222831d9;
+        border-radius: 15px;
+        padding: 15px 25px;
+        box-shadow: 0 3px 10px #1a1a27;
+      }
+      .score-item {
+        color: #ffd647;
+        font-size: 1.23em;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .score-item .main-star {
+        color: #6bc2ff;
+        font-size: 1.32em;
+        margin-right: 5px;
+      }
+      .grids-flex {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        justify-content: center;
+      }
+    </style>
+</head>
+<body>
+<div class="main-container">
+    <h1>Yam's - Feuille de Score</h1>
+    <div style="text-align:center; margin:15px 0;">
+        <button id="undo-btn" class="yams-btn" style="background:#6bc2ff;color:#19202b;">Annuler le dernier coup</button>
+    </div>
+    <div id="scores-box"></div>
+    <div class="grids-flex" id="grids-container"></div>
+</div>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

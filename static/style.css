@@ -1,0 +1,313 @@
+/* ---------- GLOBAL ---------- */
+body {
+    background: #181b20;
+    color: #e3eaf4;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+}
+
+.main-container {
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+/* ---------- CONFIGURATION PAGE ---------- */
+.config-box {
+    background: #232628ee;
+    border-radius: 14px;
+    padding: 28px 30px 24px 30px;
+    max-width: 470px;
+    margin: 40px auto 0 auto;
+    box-shadow: 0 3px 18px #172037aa;
+    border: 1.5px solid #45494d;
+}
+.team-names-row {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 16px;
+    justify-content: space-between;
+}
+.team-label {
+    font-weight: 600;
+    color: #298bd7;
+}
+.team-name-input {
+    min-width: 90px;
+    max-width: 120px;
+    padding: 3px 8px;
+    border-radius: 7px;
+    border: 1px solid #bcd2e7;
+    background: #20232b;
+    color: #e2eaf9;
+    font-size: 1.08em;
+}
+.team-inputs {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+.player-team-select {
+    min-width: 90px;
+    padding: 3px 7px;
+    border-radius: 6px;
+    border: 1px solid #bcd2e7;
+    background: #20232b;
+    color: #e2eaf9;
+    font-size: 1em;
+}
+label, select, input {
+    font-size: 1.09em;
+}
+.yams-btn {
+    background: #ffd647;
+    color: #191d22;
+    border-radius: 8px;
+    border: none;
+    padding: 10px 30px;
+    font-size: 1.12em;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 18px;
+    box-shadow: 0 2px 6px #d1c97a33;
+    transition: background 0.2s, color 0.2s;
+}
+.yams-btn:hover {
+    background: #ffed87;
+    color: #181b20;
+}
+
+/* ---------- GRILLES SCORE ---------- */
+.grids-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 30px;
+    justify-content: center;
+    margin-top: 14px;
+}
+.yams-player-card {
+    background: #232628ee;
+    border-radius: 13px;
+    box-shadow: 0 3px 12px #2227;
+    padding: 5px 1vw 18px 1vw;
+    margin-bottom: 8px;
+    width: 370px;
+    max-width: 410px;
+    min-width: 250px;
+    border: 1.2px solid #45494d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 8px;
+}
+.yams-player-card h2, .yams-player-card h3 {
+    margin: 0 0 6px 0;
+    color: #e2eaf9;
+    font-size: 1.16em;
+}
+
+/* SCORE/MAIN BOX EN HAUT DES GRILLES */
+.scores-box {
+    display: flex;
+    flex-direction: row;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+    margin: 18px 0 28px 0;
+    background: #222831d9;
+    border-radius: 15px;
+    padding: 15px 25px;
+    box-shadow: 0 3px 10px #1a1a27;
+}
+.score-item {
+    color: #ffd647;
+    font-size: 1.23em;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.score-item .main-star {
+    color: #6bc2ff;
+    font-size: 1.32em;
+    margin-right: 5px;
+}
+
+/* ---------- TABLEAU GRILLE ---------- */
+.yams-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.98em;
+    table-layout: fixed;
+    margin-top: 6px;
+    margin-bottom: 3px;
+}
+.yams-table thead th {
+    background: #232628;
+    color: #b5cdf7;
+    font-weight: 600;
+    padding: 7px 0;
+    border-bottom: 2.5px solid #273a54;
+    border-top-left-radius: 9px;
+    border-top-right-radius: 9px;
+    font-size: 1em;
+    letter-spacing: 0.08em;
+}
+.yams-table tbody td,
+.yams-table tbody th {
+    border: 1.2px solid #3b3f44;
+    background: #232628;
+    color: #dde9fa;
+    padding: 4px 7px;
+    text-align: center;
+}
+.yams-table td.editable {
+    cursor: pointer;
+    background: #243a51;
+    color: #f8ffb5;
+    font-weight: 600;
+    transition: background 0.18s, color 0.18s;
+}
+.yams-table td.editable:hover {
+    background: #436e95;
+    color: #fffbe6;
+}
+.yams-table td.not-editable {
+    background: #393b3e;
+    color: #878e99;
+    cursor: not-allowed;
+}
+.yams-table td.filled {
+    background: #13161b;
+    color: #fbf7cd;
+    font-weight: 700;
+    font-size: 1.14em;
+}
+.yams-table .bonus-row td,
+.yams-table .bonus-row th,
+.yams-table .total-row td,
+.yams-table .total-row th {
+    background: #153e62 !important;
+    color: #fff7d0;
+    font-weight: 700;
+    border-bottom: 2.5px solid #2b80de;
+}
+.yams-table .bonus-row td,
+.yams-table .bonus-row th {
+    border-bottom: 3.5px solid #a4ccf5;
+}
+.yams-table .grand-total-row td,
+.yams-table .grand-total-row th {
+    background: #173147;
+    color: #ffd647;
+    font-weight: 900;
+    font-size: 1.08em;
+    border-bottom: 3.5px solid #4b68e0;
+    border-top: 2px solid #21344e;
+}
+.yams-table td {
+    transition: background 0.18s, color 0.18s;
+}
+.yams-table tr td:last-child,
+.yams-table tr th:last-child {
+    text-align: left;
+    padding-left: 10px;
+    font-size: 1em;
+    color: #dde9fa;
+}
+.yams-table tr td:first-child,
+.yams-table tr th:first-child {
+    font-weight: 600;
+}
+
+/* ---------- POPUP ---------- */
+.yams-popup-btn {
+    background: #33383d;
+    color: #e3eaf4;
+    border: none;
+    border-radius: 7px;
+    padding: 10px 18px;
+    margin: 3px 0;
+    font-size: 1.13em;
+    font-weight: 700;
+    box-shadow: 0 2px 8px #21252944;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+}
+.yams-popup-btn.selected,
+.yams-popup-btn:focus {
+    background: #4d7cb3;
+    color: #f3f7fa;
+    outline: none;
+    box-shadow: 0 4px 12px #427eb744;
+}
+.yams-popup-btn:hover {
+    background: #506278;
+    color: #ecf2fb;
+}
+
+::-webkit-scrollbar {
+    width: 9px;
+    background: #222831;
+}
+::-webkit-scrollbar-thumb {
+    background: #2a3543;
+    border-radius: 9px;
+}
+.coeffs-box {
+    margin-top: 18px;
+    background: #20232b;
+    border-radius: 10px;
+    padding: 14px 18px 10px 18px;
+    box-shadow: 0 1px 4px #13182799;
+    display: flex;
+    gap: 18px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+}
+.coeff-label {
+    color: #b5cfff;
+    font-size: 1em;
+    font-weight: 600;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 78px;
+}
+.coeff-label input[type="number"] {
+    width: 46px;
+    padding: 3px 7px;
+    font-size: 1em;
+    margin-top: 2px;
+    border-radius: 7px;
+    border: 1.2px solid #adc5ec;
+    background: #252c39;
+    color: #fafafc;
+}
+@media (max-width: 800px) {
+  .grids-flex, #grids-container {
+    flex-direction: column !important;
+    gap: 16px !important;
+    align-items: center;
+    width: 100vw;
+  }
+  .yams-player-card {
+    width: 97vw !important;
+    min-width: 180px !important;
+    max-width: 99vw !important;
+    font-size: 1em !important;
+  }
+  .scores-box {
+    flex-direction: column !important;
+    gap: 10px !important;
+    width: 97vw !important;
+    font-size: 1.07em;
+  }
+}
+body, html {
+  touch-action: manipulation;
+}
