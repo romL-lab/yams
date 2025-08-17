@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Configurer Yam's</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="main-container">
+    <div class="config-box">
+        <h1>Configurer la partie Yam's</h1>
+        <form id="config-form" autocomplete="off">
+            <label for="num_players">Nombre de joueurs :</label>
+            <select name="num_players" id="num_players" required onchange="updateFields()">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+            </select>
+            <label for="num_teams" style="margin-left:18px;">Nombre d'équipes :</label>
+            <select name="num_teams" id="num_teams" required onchange="updateFields()"></select>
+            <div class="team-names-row" id="team-names-row"></div>
+            <div id="players-fields"></div>
+            <div class="coeffs-box">
+                <label class="coeff-label">Montante
+                    <input type="number" id="coeff-montante" value="3">
+                </label>
+                <label class="coeff-label">Libre
+                    <input type="number" id="coeff-libre" value="1">
+                </label>
+                <label class="coeff-label">Sèche
+                    <input type="number" id="coeff-seche" value="4">
+                </label>
+                <label class="coeff-label">Descendante
+                    <input type="number" id="coeff-descendante" value="2">
+                </label>
+            </div>
+            <button type="submit" class="yams-btn">Lancer la partie</button>
+        </form>
+    </div>
+</div>
+<script>
+function updateFields() {
+    const numPlayers = parseInt(document.getElementById('num_players').value, 10);
+    const minTeams = Math.ceil(numPlayers / 2);
+    const numTeamsSelect = document.getElementById('num_teams');
+    numTeamsSelect.innerHTML = "";
+    for (let t = minTeams; t <= numPlayers; t++) {
+        numTeamsSelect.innerHTML += `<option value="${t}" ${t===minTeams?'selected':''}>${t}</option>`;
+    }
+    let numTeams = parseInt(numTeamsSelect.value, 10);
+    let teamNamesHtml = '';
+    for (let i = 1; i <= numTeams; i++) {
+        teamNamesHtml += `<span class="team-label">Équipe ${i}: <input type="text" class="team-name-input" id="team-name-${i}" value="Equipe ${i}" required></span>`;
+    }
+    document.getElementById('team-names-row').innerHTML = teamNamesHtml;
+    let html = '';
+    for (let i = 0; i < numPlayers; i++) {
+        html += `<div class="team-inputs"><input type="text" name="player${i}" placeholder="Nom du joueur ${i+1}" required>
+        <select class="player-team-select" name="player_team${i}">`;
+        for (let t = 1; t <= numTeams; t++) {
+            html += `<option value="${t}">Équipe ${t}</option>`;
+        }
+        html += `</select></div>`;
+    }
+    document.getElementById('players-fields').innerHTML = html;
+}
+updateFields();
+
+document.getElementById('config-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    let numPlayers = parseInt(document.getElementById('num_players').value, 10);
+    let numTeams = parseInt(document.getElementById('num_teams').value, 10);
+
+    let teams = [];
+    let teamNames = [];
+    for (let t = 1; t <= numTeams; t++) {
+        let teamName = document.getElementById(`team-name-${t}`).value.trim() || `Equipe ${t}`;
+        teams.push(teamName);
+        teamNames.push(teamName);
+    }
+    let players = [];
+    let teamPlayerCount = {};
+    for (let i = 0; i < numPlayers; i++) {
+        let name = document.querySelector(`[name="player${i}"]`).value.trim();
+        let teamIdx = parseInt(document.querySelector(`[name="player_team${i}"]`).value, 10) - 1;
+        let team = teamNames[teamIdx];
+        teamPlayerCount[team] = (teamPlayerCount[team] || 0) + 1;
+        players.push({ name, team });
+    }
+    let firstMain = [];
+    for (let t = 0; t < teamNames.length; t++) {
+        let joueurEquipe = players.find(p => p.team === teamNames[t]);
+        if (joueurEquipe) firstMain.push(joueurEquipe.name);
+    }
+    const coeffs = {
+        montante: parseInt(document.getElementById("coeff-montante").value, 10),
+        libre: parseInt(document.getElementById("coeff-libre").value, 10),
+        seche: parseInt(document.getElementById("coeff-seche").value, 10),
+        descendante: parseInt(document.getElementById("coeff-descendante").value, 10),
+    };
+    fetch('/config', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ teams, players, firstMain, coeffs })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = data.redirect;
+        }
+    });
+});
+</script>
+</body>
+</html>

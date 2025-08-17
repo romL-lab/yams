@@ -4,91 +4,72 @@
     <meta charset="UTF-8">
     <title>Configurer Yam's</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <style>
-        .config-box {
-            background: #232628ee;
-            border-radius: 14px;
-            padding: 28px 18px 22px 18px;
-            max-width: 480px;
-            margin: 32px auto 0 auto;
-            box-shadow: 0 3px 18px #172037aa;
-            border: 1.5px solid #45494d;
-        }
-        .team-label { font-weight:600; color:#298bd7; }
-        .team-names-row { display:flex; gap:18px; align-items:center; margin-bottom:12px;}
-        .team-name-input { min-width:95px; padding:3px 8px; border-radius:7px; border:1px solid #bcd2e7; }
-        .player-team-select { margin-left:12px; }
-        label, select, input { font-size: 1.07em;}
-        .yams-btn {
-            background: #ffd647;
-            color: #191d22;
-            border-radius: 8px;
-            border: none;
-            padding: 10px 30px;
-            font-size: 1.12em;
-            font-weight: 700;
-            cursor: pointer;
-            margin-top: 18px;
-        }
-        .coeff-row {
-            margin-top: 15px;
-            background: #232628ee;
-            border-radius: 9px;
-            padding: 10px 16px;
-            display: flex;
-            gap: 16px;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 1px 4px #17203755;
-            border: 1px solid #394050;
-            font-size:1.07em;
-        }
-        .coeff-row label { margin-bottom:0;}
-    </style>
 </head>
 <body>
 <div class="main-container">
     <div class="config-box">
-        <h1>Configurer la partie Yam's</h1>
-        <form id="config-form" autocomplete="off">
-            <label for="num_players">Nombre de joueurs :</label>
-            <select name="num_players" id="num_players" required onchange="updateFields()">
-                <option value="2" selected>2</option>
-                <option value="3">3</option>
-                <option value="4">4</option>
-                <option value="5">5</option>
-                <option value="6">6</option>
-            </select>
-            <label for="num_teams" style="margin-left:18px;">Nombre d'équipes :</label>
-            <select name="num_teams" id="num_teams" required onchange="updateFields()"></select>
-            <div class="team-names-row" id="team-names-row"></div>
-            <div id="players-fields"></div>
-            <div class="coeffs-box">
-				<span class="coeff-label">Coeff Montante<br><input type="number" id="coeff-montante" value="3" min="1" max="9"></span>
-				<span class="coeff-label">Libre<br><input type="number" id="coeff-libre" value="1" min="1" max="9"></span>
-				<span class="coeff-label">Sèche<br><input type="number" id="coeff-seche" value="4" min="1" max="9"></span>
-				<span class="coeff-label">Descendante<br><input type="number" id="coeff-descendante" value="2" min="1" max="9"></span>
-			</div>
+    <h1>Configurer la partie Yam's</h1>
+    <form id="config-form" autocomplete="off">
+        <label for="num_players">Nombre de joueurs :</label>
+        <select name="num_players" id="num_players" required onchange="updateFields()">
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+        </select>
+        <label for="num_teams" style="margin-left:18px;">Nombre d'équipes :</label>
+        <select name="num_teams" id="num_teams" required onchange="updateFields()"></select>
+        <div class="team-names-row" id="team-names-row"></div>
 
-            <button type="submit" class="yams-btn">Lancer la partie</button>
-        </form>
+        <div id="players-fields"></div>
+
+        <!-- Coeffs -->
+        <div class="coeffs-box">
+            <label class="coeff-label">Montante
+                <input type="number" id="coeff-montante" value="3" min="1">
+            </label>
+            <label class="coeff-label">Libre
+                <input type="number" id="coeff-libre" value="1" min="1">
+            </label>
+            <label class="coeff-label">Sèche
+                <input type="number" id="coeff-seche" value="4" min="1">
+            </label>
+            <label class="coeff-label">Descendante
+                <input type="number" id="coeff-descendante" value="2" min="1">
+            </label>
+        </div>
+
+        <button type="submit" class="yams-btn">Lancer la partie</button>
+    </form>
     </div>
 </div>
 
 <script>
 function updateFields() {
-    const numPlayers = parseInt(document.getElementById('num_players').value, 10);
-    // CORRECTION : minTeams = 1 !
-    const minTeams = 1;
+	const numPlayers = parseInt(document.getElementById('num_players').value, 10);
+    const minTeams = Math.ceil(numPlayers / 2);
+    const maxTeams = numPlayers;
+
     const numTeamsSelect = document.getElementById('num_teams');
+
+    // Sauvegarder la valeur actuelle AVANT de vider
+    const oldVal = parseInt(numTeamsSelect.value, 10);
+
+    // Réinitialiser
     numTeamsSelect.innerHTML = "";
-    for(let t = minTeams; t <= numPlayers; t++) {
-        numTeamsSelect.innerHTML += `<option value="${t}" ${t===2?'selected':''}>${t}</option>`;
+
+    for (let t = minTeams; t <= maxTeams; t++) {
+        numTeamsSelect.innerHTML += `<option value="${t}" ${t === oldVal ? 'selected' : ''}>${t}</option>`;
     }
+
     let numTeams = parseInt(numTeamsSelect.value, 10);
     let teamNamesHtml = '';
     for (let i = 1; i <= numTeams; i++) {
-        teamNamesHtml += `<span class="team-label">Équipe ${i}: <input type="text" class="team-name-input" id="team-name-${i}" value="Equipe ${i}" required></span>`;
+        teamNamesHtml += `<span class="team-label">Équipe ${i}: 
+            <input type="text" class="team-name-input" id="team-name-${i}" value="Equipe ${i}" required>
+        </span>`;
     }
     document.getElementById('team-names-row').innerHTML = teamNamesHtml;
     let html = '';
@@ -112,33 +93,36 @@ document.getElementById('config-form').addEventListener('submit', function(e) {
     let numPlayers = parseInt(document.getElementById('num_players').value, 10);
     let numTeams = parseInt(document.getElementById('num_teams').value, 10);
 
-    let teams = [];
-    let teamNames = [];
+    // Création d'un objet teams { "Equipe 1": [] }
+    let teamsObj = {};
     for (let t = 1; t <= numTeams; t++) {
         let teamName = document.getElementById(`team-name-${t}`).value.trim() || `Equipe ${t}`;
-        teams.push(teamName);
-        teamNames.push(teamName);
+        teamsObj[teamName] = [];
     }
+
     let players = [];
     let teamPlayerCount = {};
     for (let i = 0; i < numPlayers; i++) {
         let name = document.querySelector(`[name="player${i}"]`).value.trim();
         let teamIdx = parseInt(document.querySelector(`[name="player_team${i}"]`).value, 10) - 1;
-        let team = teamNames[teamIdx];
-        teamPlayerCount[team] = (teamPlayerCount[team] || 0) + 1;
-        if (teamPlayerCount[team] > 2) {
+        let teamName = Object.keys(teamsObj)[teamIdx];
+
+        teamPlayerCount[teamName] = (teamPlayerCount[teamName] || 0) + 1;
+        if (teamPlayerCount[teamName] > 2) {
             alert("Pas plus de 2 joueurs par équipe.");
             return;
         }
-        players.push({ name, team });
+
+        players.push(name);
+        teamsObj[teamName].push(name);
     }
+
     // Premier joueur de chaque équipe
-    let firstMain = [];
-    for (let t = 0; t < teamNames.length; t++) {
-        let joueurEquipe = players.find(p => p.team === teamNames[t]);
-        if (joueurEquipe) firstMain.push(joueurEquipe.name);
-    }
-    // Ajout : coefficients dans l'objet envoyé
+    let firstMain = {};
+    Object.keys(teamsObj).forEach(team => {
+        firstMain[team] = 0; // index du premier joueur dans la liste
+    });
+
     const coeffs = {
         montante: parseInt(document.getElementById("coeff-montante").value, 10),
         libre: parseInt(document.getElementById("coeff-libre").value, 10),
@@ -150,8 +134,8 @@ document.getElementById('config-form').addEventListener('submit', function(e) {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({
-            teams: teams,
-            players: players,
+            teams: teamsObj,  // ← objet bien formaté
+            players: players, // liste simple
             firstMain: firstMain,
             coeffs: coeffs
         })
@@ -159,12 +143,16 @@ document.getElementById('config-form').addEventListener('submit', function(e) {
     .then(r => r.json())
     .then(data => {
         if (data.success) {
-            window.location.href = '/game';
+            window.location.href = `/game/${data.game_id}`;
         } else {
             alert("Erreur de configuration.");
         }
     });
 });
+
 </script>
 </body>
 </html>
+
+
+

@@ -1,152 +1,154 @@
-from flask import Flask, render_template, request, jsonify
+import uuid
+from flask import Flask, render_template, request, jsonify, redirect, url_for
+#from flask_cors import CORS
 
 app = Flask(__name__)
+#CORS(app)
+
+# Chaque partie aura son propre game_id
+games = {}
 
 def create_empty_grid():
-    categories = [
-        '1', '2', '3', '4', '5', '6',
-        'total', 'Bonus',
-        'Full', 'Carre', 'Suite', 'Plus', 'Moins',
-        "Yam's", 'TOTAL'
-    ]
-    sub_columns = ["montante", "libre", "seche", "descendante"]
-    return {cat: {sub: None for sub in sub_columns} for cat in categories}
+    categories = ['1','2','3','4','5','6','total','Bonus','Full','Carre','Suite','Plus','Moins',"Yam's",'TOTAL']
+    sub_columns = ['montante','libre','seche','descendante']
+    grid = {}
+    for cat in categories:
+        grid[cat] = {}
+        for sub in sub_columns:
+            grid[cat][sub] = ""
+    return grid
 
-game_data = {
-    "teams": {},
-    "grids": {},
-    "players": [],
-    "first_main": {},
-    "main_index": {},
-    "team_order": [],
-    "current_team": 0,
-    "history": {}
-}
+@app.route('/')
+def home():
+    return redirect(url_for('config_page'))
 
-@app.route("/")
-def index():
-    return render_template("config.html")
+@app.route('/config')
+def config_page():
+    return render_template('config.html')
 
-@app.route("/config", methods=["POST"])
-def config():
-    global game_data
-    data = request.json
-    team_names = data["teams"]
-    players = data["players"]
-    first_mains = data["firstMain"]
-    game_data = {
-        "teams": {},
-        "grids": {},
-        "players": [],
-        "first_main": {},
-        "main_index": {},
-        "team_order": [],
-        "current_team": 0,
-        "history": {}
-    }
-    for name in team_names:
-        game_data["teams"][name] = []
-        game_data["grids"][name] = create_empty_grid()
-    for p in players:
-        team = p["team"]
-        name = p["name"].strip()
-        game_data["teams"][team].append(name)
-        game_data["players"].append(name)
-    for i, team_name in enumerate(team_names):
-        first_player = first_mains[i].strip()
-        game_data["first_main"][team_name] = game_data["teams"][team_name].index(first_player)
-        game_data["main_index"][team_name] = game_data["first_main"][team_name]
-        game_data["team_order"].append(team_name)
-    game_data = compute_totals(game_data)
-    return jsonify({"success": True})
+@app.route('/config', methods=['POST'])
+def config_post():
+    data = request.get_json()
+    game_id = str(uuid.uuid4())
+    try: 
+        # Construire teams en dict {teamName: [joueurs en string]}
+        teams_dict = {}
+        for team_name, joueurs in data["teams"].items():
+            teams_dict[team_name] = [str(j) for j in joueurs]
 
-@app.route("/state")
-def state():
-    return jsonify(game_data)
+        # Déterminer main_index à partir de firstMain
+        main_index_dict = {}
+        for team_name in teams_dict:
+            if isinstance(data.get("firstMain"), dict):
+                main_index_dict[team_name] = data["firstMain"].get(team_name, 0)
+            elif isinstance(data.get("firstMain"), list):
+                main_index_dict[team_name] = data["firstMain"][list(teams_dict.keys()).index(team_name)] \
+                    if team_name in teams_dict else 0
+            else:
+                main_index_dict[team_name] = 0
 
-@app.route("/update", methods=["POST"])
-def update():
-    global game_data
-    data = request.json
-    row_idx = data["row"]
-    col_idx = data["col"]
+        games[game_id] = {
+            "teams": teams_dict,
+            "players": data["players"],  # si besoin de garder à part
+            "firstMain": data.get("firstMain", []),
+            "coeffs": data.get("coeffs", {"montante": 3, "libre": 1, "seche": 4, "descendante": 2}),
+            "grids": {team: create_empty_grid() for team in teams_dict},
+            "turn_index": 0,
+            "team_order": list(teams_dict.keys()),
+            "current_team": 0,  # 👈 Ajout pour dire que c'est l'équipe 0 qui commence
+            "main_index": main_index_dict,
+            "history": [],
+            "scores": {team: 0 for team in teams_dict}
+        }
+        return jsonify({"success": True, "game_id": game_id})
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route('/game/<game_id>')
+def game_page(game_id):
+    if game_id not in games:
+        return "Partie introuvable", 404
+    return render_template('index.html', game_id=game_id)
+
+@app.route('/get_state/<game_id>')
+def get_state(game_id):
+    if game_id not in games:
+        return jsonify({"error": "Partie introuvable"}), 404
+    return jsonify(games[game_id])
+
+@app.route('/update_cell/<game_id>', methods=['POST'])
+def update_cell(game_id):
+    if game_id not in games:
+        return jsonify({"error": "Partie introuvable"}), 404
+
+    data = request.get_json()
     team = data["team"]
-    value = data["value"]
-    CATEGORIES = [
-        '1', '2', '3', '4', '5', '6',
-        'total', 'Bonus',
-        'Full', 'Carre', 'Suite', 'Plus', 'Moins',
-        "Yam's", 'TOTAL'
-    ]
-    SUB_COLUMNS = ["montante", "libre", "seche", "descendante"]
-    cat = CATEGORIES[row_idx]
-    if isinstance(col_idx, int):
-        sub = SUB_COLUMNS[col_idx]
-    else:
-        sub = col_idx
+    cat = data["cat"]
+    sub = data["sub"]
+    val = data["val"]
 
-    current = game_data["team_order"][game_data["current_team"]]
-    if team != current:
-        return jsonify({"success": False, "message": "Ce n'est pas le tour de cette équipe."})
-
-    # Met à jour la grille
-    game_data["grids"][team][cat][sub] = value
-    game_data = compute_totals(game_data)
-
-    # Historique pour Undo (indente correctement et ajoute le catIndex et subIndex pour revenir en arrière)
-    if "history" not in game_data:
-        game_data["history"] = {}
-    if team not in game_data["history"]:
-        game_data["history"][team] = []
-    game_data["history"][team].append({
+    # Historique pour Undo
+    games[game_id]["history"].append({
+        "team": team,
         "cat": cat,
         "sub": sub,
-        "row_idx": row_idx,
-        "col_idx": col_idx,
-        "old_value": value
+        "old_val": games[game_id]["grids"][team][cat][sub]
     })
 
-    # Rotation automatique
-    game_data["main_index"][team] = (game_data["main_index"][team] + 1) % len(game_data["teams"][team])
-    game_data["current_team"] = (game_data["current_team"] + 1) % len(game_data["team_order"])
-    return jsonify({"success": True, "game": game_data})
+    games[game_id]["grids"][team][cat][sub] = val
+    compute_totals(games[game_id])
 
-# --------- Undo ---------
+    # 🔄 Avancer main_index dans l'équipe actuelle
+    joueurs = games[game_id]["teams"][team]
+    if joueurs:  # éviter erreur si équipe vide
+        games[game_id]["main_index"][team] = (games[game_id]["main_index"][team] + 1) % len(joueurs)
 
-@app.route("/undo", methods=["POST"])
-def undo():
-    global game_data
-    team = game_data["team_order"][(game_data["current_team"] - 1) % len(game_data["team_order"])]
-    history = game_data.get("history", {})
-    if not history.get(team):
-        return jsonify({"success": False, "message": "Aucun coup à annuler pour cette équipe."})
+    # 👥 Passer à l'équipe suivante
+    games[game_id]["current_team"] = (games[game_id]["current_team"] + 1) % len(games[game_id]["team_order"])
 
-    last = history[team].pop()
-    cat = last["cat"]
-    sub = last["sub"]
-    grid = game_data["grids"][team]
-    if cat in grid and sub in grid[cat]:
-        grid[cat][sub] = None if cat not in ["TOTAL", "total", "Bonus"] else 0
-
-    # Annulation du tour
-    game_data["current_team"] = (game_data["current_team"] - 1) % len(game_data["team_order"])
-    game_data["main_index"][team] = (game_data["main_index"][team] - 1) % len(game_data["teams"][team])
-
-    game_data = compute_totals(game_data)
-    return jsonify({"success": True, "game": game_data})
+    return jsonify({"success": True})
 
 
-@app.route("/game")
-def game():
-    return render_template("index.html")
+@app.route('/undo/<game_id>', methods=['POST'])
+def undo(game_id):
+    print("UNDO demandé pour", game_id)
+    print("HISTO:", games[game_id]["history"])  # debug
+    
+    if game_id not in games:
+        return jsonify({"error": "Partie introuvable"}), 404
 
-def compute_totals(data):
-    for team, grille in data["grids"].items():
+    if not games[game_id]["history"]:
+        return jsonify({"success": False, "message": "Aucun coup à annuler"})
+
+    last = games[game_id]["history"].pop()
+    print("DERNIER COUP:", last)  # debug
+    # Remettre l'ancienne valeur
+    games[game_id]["grids"][last["team"]][last["cat"]][last["sub"]] = last["old_val"]
+    compute_totals(games[game_id])
+
+    # 👥 Revenir à l'équipe précédente
+    games[game_id]["current_team"] = (games[game_id]["current_team"] - 1) % len(games[game_id]["team_order"])
+
+    # 🔄 Reculer main_index pour cette équipe
+    joueurs = games[game_id]["teams"][last["team"]]
+    if joueurs:
+        games[game_id]["main_index"][last["team"]] = (games[game_id]["main_index"][last["team"]] - 1) % len(joueurs)
+
+    return jsonify({"success": True})
+
+
+def compute_totals(game_data):
+    coeffs = game_data.get("coeffs", {"montante": 3, "libre": 1, "seche": 4, "descendante": 2})
+    for team, grille in game_data["grids"].items():
         for sub in ["montante", "libre", "seche", "descendante"]:
             total_haut = 0
-            for cat in ['1','2','3','4','5','6']:
+            for cat in ['1', '2', '3', '4', '5', '6']:
                 v = grille[cat][sub]
-                if v is not None and v != "":
+                if v not in (None, "", "✗"):
                     total_haut += int(v)
             grille['total'][sub] = total_haut if total_haut > 0 else ""
             # BONUS
@@ -162,34 +164,30 @@ def compute_totals(data):
                 grille['Bonus'][sub] = 20
             else:
                 grille['Bonus'][sub] = ""
-            # TOTAL BAS (TOTAL)
+            # TOTAL
             total_bas = 0
             for cat in ['Full', 'Carre', 'Suite', 'Plus', 'Moins', "Yam's"]:
                 v = grille[cat][sub]
-                if v is not None and v != "":
+                if v not in (None, "", "✗"):
                     total_bas += int(v)
-            grille['TOTAL'][sub] = total_bas + (grille['total'][sub] if grille['total'][sub] else 0) + (grille['Bonus'][sub] if grille['Bonus'][sub] else 0)
-            COEFFS = {"montante": 3, "libre": 1, "seche": 4, "descendante": 2}
-            CATEGORIES = ['1', '2', '3', '4', '5', '6', 'total', 'Bonus', 'Full', 'Carre', 'Suite', 'Plus', 'Moins', "Yam's", 'TOTAL']
-            for team, grid in game_data["grids"].items():
-                grand_total = 0
-                for col, coeff in COEFFS.items():
-                    for cat in CATEGORIES:
-                        if cat in ["total", "Bonus", "TOTAL"]:
-                            continue
-                        v = grid.get(cat, {}).get(col)
-                        if v is not None and v != "" and v != "✗":
-                            try:
-                                grand_total += int(v) * coeff
-                            except Exception:
-                                pass
-                game_data["scores"] = game_data.get("scores", {})
-                game_data["scores"][team] = grand_total
-    return data
+            grille['TOTAL'][sub] = (
+                total_bas +
+                (grille['total'][sub] if grille['total'][sub] else 0) +
+                (grille['Bonus'][sub] if grille['Bonus'][sub] else 0)
+            )
 
+    # Grand total avec coeffs (inclut désormais le Bonus)
+    CATEGORIES = ['1', '2', '3', '4', '5', '6', 'Bonus', 'Full', 'Carre', 'Suite', 'Plus', 'Moins', "Yam's"]
+    for team, grid in game_data["grids"].items():
+        grand_total = 0
+        for col, coeff in coeffs.items():
+            for cat in CATEGORIES:
+                v = grid.get(cat, {}).get(col)
+                if v not in (None, "", "✗"):
+                    grand_total += int(v) * coeff
+        game_data["scores"][team] = grand_total
 
+    return game_data
 
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
+if __name__ == '__main__':
+    app.run(debug=True, host="0.0.0.0", port=5000)

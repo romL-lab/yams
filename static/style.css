@@ -6,36 +6,89 @@ body {
     margin: 0;
     padding: 0;
 }
-
 .main-container {
     max-width: 1500px;
     margin: 0 auto;
     padding: 16px;
 }
-
 /* ---------- CONFIGURATION PAGE ---------- */
-.config-box {
-    background: #232628ee;
-    border-radius: 14px;
-    padding: 28px 30px 24px 30px;
-    max-width: 470px;
-    margin: 40px auto 0 auto;
-    box-shadow: 0 3px 18px #172037aa;
-    border: 1.5px solid #45494d;
-}
+
+ .config-box {
+            background: #232628ee;
+            border-radius: 14px;
+            padding: 28px 18px 22px 18px;
+            max-width: 480px;
+            margin: 32px auto 0 auto;
+            box-shadow: 0 3px 18px #172037aa;
+            border: 1.5px solid #45494d;
+        }
+        .team-label { font-weight:600; color:#298bd7; }
+        .team-names-row { display:flex; gap:18px; align-items:center; margin-bottom:12px;}
+        .team-name-input { min-width:95px; padding:3px 8px; border-radius:7px; border:1px solid #bcd2e7; }
+        .player-team-select { margin-left:12px; }
+        label, select, input { font-size: 1.07em;}
+        .yams-btn {
+            background: #ffd647;
+            color: #191d22;
+            border-radius: 8px;
+            border: none;
+            padding: 10px 30px;
+            font-size: 1.12em;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 18px;
+        }
+        .coeffs-box {
+            margin-top: 18px;
+            background: #20232b;
+            border-radius: 10px;
+            padding: 14px 18px 10px 18px;
+            box-shadow: 0 1px 4px #13182799;
+            display: flex;
+            gap: 18px;
+            align-items: flex-end;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+        }
+        .coeff-label {
+            color: #b5cfff;
+            font-size: 1em;
+            font-weight: 600;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            min-width: 78px;
+        }
+        .coeff-label input[type="number"] {
+            width: 46px;
+            padding: 3px 7px;
+            font-size: 1em;
+            margin-top: 2px;
+            border-radius: 7px;
+            border: 1.2px solid #adc5ec;
+            background: #252c39;
+            color: #fafafc;
+        }
+		
+
 .team-names-row {
     display: flex;
     gap: 18px;
     align-items: center;
     margin-bottom: 16px;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    justify-content: flex-start;
 }
 .team-label {
     font-weight: 600;
     color: #298bd7;
+    margin-right: 6px;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
 }
 .team-name-input {
-    min-width: 90px;
+    min-width: 78px;
     max-width: 120px;
     padding: 3px 8px;
     border-radius: 7px;
@@ -49,6 +102,7 @@ body {
     align-items: center;
     gap: 10px;
     margin-bottom: 6px;
+    flex-wrap: wrap;
 }
 .player-team-select {
     min-width: 90px;
@@ -96,7 +150,7 @@ label, select, input {
     margin-bottom: 8px;
     width: 370px;
     max-width: 410px;
-    min-width: 250px;
+    min-width: 220px;
     border: 1.2px solid #45494d;
     display: flex;
     flex-direction: column;
@@ -108,7 +162,6 @@ label, select, input {
     color: #e2eaf9;
     font-size: 1.16em;
 }
-
 /* SCORE/MAIN BOX EN HAUT DES GRILLES */
 .scores-box {
     display: flex;
@@ -248,7 +301,42 @@ label, select, input {
     background: #506278;
     color: #ecf2fb;
 }
-
+/* ---------- POPUP MOBILE FIX ---------- */
+@media (max-width: 800px) {
+    .grids-flex, #grids-container {
+        flex-direction: column !important;
+        gap: 16px !important;
+        align-items: center;
+        width: 100vw;
+    }
+    .yams-player-card {
+        width: 97vw !important;
+        min-width: 180px !important;
+        max-width: 99vw !important;
+        font-size: 1em !important;
+    }
+    .scores-box {
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 97vw !important;
+        font-size: 1.07em;
+    }
+    .config-box {
+        max-width: 98vw !important;
+        min-width: unset !important;
+        padding: 8vw 3vw 7vw 3vw !important;
+    }
+    .yams-popup-btn {
+        font-size: 1em;
+        padding: 9px 12px;
+    }
+    .yams-table thead th,
+    .yams-table td {
+        font-size: 0.97em;
+        padding: 3px 3px;
+    }
+}
+/* --------- SCROLLBAR --------- */
 ::-webkit-scrollbar {
     width: 9px;
     background: #222831;
@@ -257,14 +345,15 @@ label, select, input {
     background: #2a3543;
     border-radius: 9px;
 }
+/* --------- COEFFS --------- */
 .coeffs-box {
     margin-top: 18px;
     background: #20232b;
     border-radius: 10px;
-    padding: 14px 18px 10px 18px;
+    padding: 14px 10px 10px 10px;
     box-shadow: 0 1px 4px #13182799;
     display: flex;
-    gap: 18px;
+    gap: 12px;
     align-items: flex-end;
     flex-wrap: wrap;
     justify-content: flex-start;
@@ -276,11 +365,11 @@ label, select, input {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    min-width: 78px;
+    min-width: 70px;
 }
 .coeff-label input[type="number"] {
-    width: 46px;
-    padding: 3px 7px;
+    width: 40px;
+    padding: 3px 6px;
     font-size: 1em;
     margin-top: 2px;
     border-radius: 7px;
@@ -288,26 +377,16 @@ label, select, input {
     background: #252c39;
     color: #fafafc;
 }
-@media (max-width: 800px) {
-  .grids-flex, #grids-container {
-    flex-direction: column !important;
-    gap: 16px !important;
-    align-items: center;
-    width: 100vw;
-  }
-  .yams-player-card {
-    width: 97vw !important;
-    min-width: 180px !important;
-    max-width: 99vw !important;
-    font-size: 1em !important;
-  }
-  .scores-box {
-    flex-direction: column !important;
-    gap: 10px !important;
-    width: 97vw !important;
-    font-size: 1.07em;
-  }
-}
 body, html {
   touch-action: manipulation;
+}
+
+.recent-move-1 {
+    background-color: rgba(255, 255, 0, 0.6) !important;
+}
+.recent-move-2 {
+    background-color: rgba(255, 255, 150, 0.4) !important;
+}
+.recent-move-3 {
+    background-color: rgba(255, 255, 200, 0.2) !important;
 }
