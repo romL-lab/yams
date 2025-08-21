@@ -793,3 +793,10 @@ html[data-theme="photo"] .config-container {
 }
 /* Respecter l’attribut [hidden] pour la modale */
 .theme-modal[hidden] { display: none !important; }
+
+/* Forcer centrage des cellules numériques */
+.grid-table td {
+  text-align: center;
+  vertical-align: middle;
+}
+
