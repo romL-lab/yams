@@ -210,11 +210,16 @@
     }
   });
 
-  // ————— Thème courant au chargement —————
-  (function initTheme(){
-    const val = localStorage.getItem('yams-theme');
-    if (val) htmlEl.setAttribute('data-theme', val);
-  })();
+	// ————— Thème courant au chargement —————
+	(function initTheme(){
+    let val = localStorage.getItem('yams-theme');
+    if (!val) {
+        val = 'photo'; // 👈 par défaut : photo
+        localStorage.setItem('yams-theme', val);
+    }
+    htmlEl.setAttribute('data-theme', val);
+})();
+
 </script>
 
 
