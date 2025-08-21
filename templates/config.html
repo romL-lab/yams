@@ -2,49 +2,98 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Configurer Yam's</title>
+    <title>YAM's - Feuille de Score</title>
+
+    <!-- Manifest (Android/Chrome) -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}?v=1">
+    <meta name="theme-color" content="#181b20">
+
+    <!-- iOS (ajout à l’écran d’accueil) -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180.png') }}?v=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Favicon navigateur desktop -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v=2">
+	<link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon-32.png') }}?v=3" sizes="32x32">
+    <link rel="alternate icon" href="{{ url_for('static', filename='icons/icon-192.png') }}?v=2">
+
+    <!-- Ton CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
+
 <body>
-<div class="main-container">
-    <div class="config-box">
-    <h1>Configurer la partie Yam's</h1>
-    <form id="config-form" autocomplete="off">
-        <label for="num_players">Nombre de joueurs :</label>
-        <select name="num_players" id="num_players" required onchange="updateFields()">
-            <option value="1">1</option>
-            <option value="2" selected>2</option>
-            <option value="3">3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-        </select>
-        <label for="num_teams" style="margin-left:18px;">Nombre d'équipes :</label>
-        <select name="num_teams" id="num_teams" required onchange="updateFields()"></select>
-        <div class="team-names-row" id="team-names-row"></div>
 
-        <div id="players-fields"></div>
-
-        <!-- Coeffs -->
-        <div class="coeffs-box">
-            <label class="coeff-label">Montante
-                <input type="number" id="coeff-montante" value="3" min="1">
-            </label>
-            <label class="coeff-label">Libre
-                <input type="number" id="coeff-libre" value="1" min="1">
-            </label>
-            <label class="coeff-label">Sèche
-                <input type="number" id="coeff-seche" value="4" min="1">
-            </label>
-            <label class="coeff-label">Descendante
-                <input type="number" id="coeff-descendante" value="2" min="1">
-            </label>
-        </div>
-
-        <button type="submit" class="yams-btn">Lancer la partie</button>
-    </form>
-    </div>
+<div id="splash" role="dialog" aria-modal="true" aria-label="Écran d’introduction">
+  <div class="yui-panel">
+    <img class="yui-mark" alt="" src="{{ url_for('static', filename='icons/icon-192.png') }}">
+    <h1 class="yui-title">YAM’s<br>Feuille de score 4 colonnes</h1>
+    <p class="yui-sub">Parties en équipe, rotation de la première main, saisie guidée. Préparez vos dés 🎲</p>
+    <div class="yui-meta"><span>v1.0</span> • <span>RL</span></div>
+    <button class="yui-btn" id="splash-go">GO!</button>
+  </div>
 </div>
+
+
+<div class="main-container">
+  <div class="config-box">
+    <h1>Configurer la partie Yam's</h1>
+
+    <div class="config-hero">
+      <h2>Bienvenue 👋</h2>
+      <p>Bienvenue sur l’app des feuilles de score du Yam’s.</p>
+      <p>Pour commencer, vous devez configurer votre partie. On vous guide pas à pas !</p>
+    </div>
+
+    <form id="config-form" autocomplete="off">
+
+      <!-- Étape 1 -->
+      <h3 class="config-sub">1) Choisir le nombre de joueurs et d’équipes</h3>
+      <label for="num_players">Nombre de joueurs :</label>
+      <select name="num_players" id="num_players" required onchange="updateFields()">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+      </select>
+
+      <label for="num_teams" style="margin-left:18px;">Nombre d'équipes :</label>
+      <select name="num_teams" id="num_teams" required onchange="updateFields()"></select>
+
+      <!-- Étape 2 -->
+      <h3 class="config-sub">2) Nommer les équipes</h3>
+      <div class="team-names-row" id="team-names-row"></div>
+
+      <!-- Étape 3 -->
+      <h3 class="config-sub">3) Saisir les joueurs et les affecter à une équipe</h3>
+      <div id="players-fields"></div>
+
+      <!-- Étape 4 -->
+      <h3 class="config-sub">4) Ajuster les coefficients (optionnel)</h3>
+      <div class="coeffs-box">
+        <label class="coeff-label">Montante
+          <input type="number" id="coeff-montante" value="3" min="1">
+        </label>
+        <label class="coeff-label">Libre
+          <input type="number" id="coeff-libre" value="1" min="1">
+        </label>
+        <label class="coeff-label">Sèche
+          <input type="number" id="coeff-seche" value="4" min="1">
+        </label>
+        <label class="coeff-label">Descendante
+          <input type="number" id="coeff-descendante" value="2" min="1">
+        </label>
+      </div>
+
+      <!-- Étape 5 -->
+      <h3 class="config-sub">5) Lancer la partie</h3>
+      <button type="submit" class="yams-btn">C'est parti 🎲</button>
+    </form>
+  </div>
+</div>
+
 
 <script>
 function updateFields() {
@@ -67,7 +116,7 @@ function updateFields() {
     let numTeams = parseInt(numTeamsSelect.value, 10);
     let teamNamesHtml = '';
     for (let i = 1; i <= numTeams; i++) {
-        teamNamesHtml += `<span class="team-label">Équipe ${i}: 
+        teamNamesHtml += `<span class="team-label">Équipe ${i} : 
             <input type="text" class="team-name-input" id="team-name-${i}" value="Equipe ${i}" required>
         </span>`;
     }
@@ -151,6 +200,24 @@ document.getElementById('config-form').addEventListener('submit', function(e) {
 });
 
 </script>
+
+<script>
+  document.documentElement.classList.add('splash-lock');
+  document.body.classList.add('splash-lock');
+
+  const splash = document.getElementById('splash');
+  const goBtn  = document.getElementById('splash-go');
+
+  function closeSplash(){
+    splash?.classList.add('yui-hide');
+    document.documentElement.classList.remove('splash-lock');
+    document.body.classList.remove('splash-lock');
+  }
+
+  goBtn?.addEventListener('click', closeSplash);
+</script>
+
+
 </body>
 </html>
 

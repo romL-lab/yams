@@ -189,5 +189,40 @@ def compute_totals(game_data):
 
     return game_data
 
+
+
+
+def reset_game_state(game):
+    """Remet à zéro les grilles et l'état de partie, en conservant équipes/joueurs/coeffs."""
+    # 1) grilles neuves pour chaque équipe
+    game["grids"] = {team: create_empty_grid() for team in game["teams"].keys()}
+
+    # 2) historique et scores vidés
+    game["history"] = []
+    game["scores"] = {team: 0 for team in game["teams"].keys()}
+
+    # 3) tour et rotation de première main
+    game["turn_index"] = 0
+    game["current_team"] = 0
+    # remet la première main au premier joueur de chaque équipe (ou garde la même si tu préfères)
+    game["main_index"] = {team: 0 for team in game["teams"].keys()}
+
+    # 4) (optionnel) recalcul des totaux sur des grilles vides
+    compute_totals(game)
+
+    return game
+    
+    
+@app.post("/game/<game_id>/reset")
+def reset_game(game_id):
+    if game_id not in games:
+        return jsonify({"error": "Partie introuvable"}), 404
+
+    # remet à zéro en conservant équipes / joueurs / coeffs
+    reset_game_state(games[game_id])
+
+    return jsonify({"success": True})
+    
+
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=5000)

@@ -90,94 +90,7 @@ function isCellEditable(gameState, team, catIndex, subIndex) {
     return true;
 }
 
-/*function renderAllGrids(state) {
-    let html = '';
-    if (!state || !state.teams) {
-        document.getElementById('grids-container').innerHTML = "<div>Aucune partie en cours.</div>";
-        return;
-    }
-	
-    window.currentTeamName = state.team_order[state.current_team];
 
-    // Déterminer les 3 derniers coups
-    const recentMoves = state.history.slice(-3).reverse(); 
-    // format: [{team, cat, sub, old_val}, ...]	
-	
-    html += '<div class="grids-flex">';
-    for (let teamName of state.team_order) {
-        let joueurs = state.teams[teamName] || [];
-        let grille = state.grids[teamName] || {};
-		let mainIndex = state.main_index && state.main_index[teamName] !== undefined ? state.main_index[teamName] : -1;
-
-        html += `
-        <div class="yams-player-card">
-            <div style="font-weight: bold; font-size:1.13em; margin-bottom:4px; color:#e5eaf3;">
-                ${teamName}
-                <span style="font-size:0.93em;color:#7ca3c6;">
-                    (${joueurs.map((j, idx) => 
-                        idx === mainIndex
-                            ? `<span class="main-hand-player">${j} <span title="Joueur en 1ère main">🖐️</span></span>`
-                            : j
-                    ).join(" / ")})
-                </span>
-            </div>
-			<div class="score-display" style="margin-bottom: 7px;">
-                Score : <span style="color:#ffd647; font-size:1.18em; font-weight:bold;">
-               ${(state.scores && state.scores[teamName]) ? state.scores[teamName] : 0}
-                </span>
-            </div>
-            <table class="yams-table">
-                <thead>
-                    <tr>
-                        <th></th>
-                        ${SUB_COLUMNS.map(sub => `<th>${SUB_LABELS[sub]}</th>`).join("")}
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        for (let i = 0; i < CATEGORIES.length; i++) {
-            let cat = CATEGORIES[i];
-            let rowClass = '';
-            if (cat === 'total') rowClass = 'total-row';
-            if (cat === 'Bonus') rowClass = 'bonus-row';
-            if (cat === 'TOTAL') rowClass = 'total-bas-row';
-
-            html += `<tr class="${rowClass}">`;
-            html += `<td class="cat-label">${cat}</td>`;
-            for (let s = 0; s < SUB_COLUMNS.length; s++) {
-                let isTotalOrBonus = ['TOTAL', 'total', 'Bonus'].includes(cat);
-                let sub = SUB_COLUMNS[s];
-                let val = grille[cat]?.[sub] ?? "";
-                if ((val === 0 || val === "0") && !isTotalOrBonus) val = "✗"; 
-
-                // Vérifier si c’est un coup récent
-                let recentIndex = recentMoves.findIndex(m => 
-                    m.team === teamName && m.cat === cat && m.sub === sub
-                );
-                let recentClass = recentIndex >= 0 ? ` recent-move-${recentIndex+1}` : "";
-
-                html += `<td 
-                    class="${val !== "" ? "filled" : (isCellEditable(state, teamName, i, s) ? "editable" : "not-editable")}${recentClass}"
-                    data-team="${teamName}" data-cat-index="${i}" data-sub-index="${s}"
-                >${val}</td>`;
-            }
-            html += `</tr>`;
-        }
-        html += `</tbody></table></div>`;
-    }
-    html += '</div>';
-    document.getElementById('grids-container').innerHTML = html;
-
-    document.querySelectorAll('td.editable').forEach(td => {
-        td.addEventListener('click', () => {
-            const team = td.dataset.team;
-            const catIndex = parseInt(td.dataset.catIndex, 10);
-            const subIndex = parseInt(td.dataset.subIndex, 10);
-            openEditPopup(team, catIndex, subIndex, td.innerText);
-        });
-    });
-    addUndoButton();
-}*/
 
 function renderAllGrids(state) {
     let html = '';
@@ -202,16 +115,17 @@ function renderAllGrids(state) {
 
         html += `
         <div class="yams-player-card">
-            <div style="font-weight: bold; font-size:1.13em; margin-bottom:4px; color:#e5eaf3;">
-                ${teamName}
-                <span style="font-size:0.93em;color:#7ca3c6;">
-                    (${joueurs.map((j, idx) => 
-                        idx === mainIndex
-                            ? `<span class="main-hand-player">${j} <span title="Joueur en 1ère main">🖐️</span></span>`
-                            : j
-                    ).join(" / ")})
-                </span>
-            </div>
+			<div style="font-weight: bold; font-size:1.13em; margin-bottom:4px; color:#e5eaf3;">
+				${teamName}
+				<div style="font-size:0.93em; color:#7ca3c6; margin-top:2px;">
+					${joueurs.map((j, idx) => 
+						idx === mainIndex
+							? `<span class="main-hand-player">${j} <span title="Joueur en 1ère main">🖐️</span></span>`
+							: j
+					).join(" / ")}
+				</div>
+			</div>
+
             <div class="score-display" style="margin-bottom: 7px;">
                 Score : <span style="color:#ffd647; font-size:1.18em; font-weight:bold;">
                     ${(state.scores && state.scores[teamName]) ? state.scores[teamName] : 0}
@@ -362,3 +276,6 @@ function handleUndo() {
         }
     });
 }
+
+
+
