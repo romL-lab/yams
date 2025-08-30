@@ -7,6 +7,121 @@ if (!GAME_ID) {
     alert("ID de partie manquant dans l'URL !");
 }
 
+// === Local autosave & offline mirror ===
+const LS_KEY_STATE = `yams:state:${GAME_ID}`;
+
+function saveLocalState(state){
+  try { localStorage.setItem(LS_KEY_STATE, JSON.stringify(state)); } catch(e){}
+}
+function loadLocalState(){
+  try { return JSON.parse(localStorage.getItem(LS_KEY_STATE) || "null"); } catch(e){ return null; }
+}
+
+function computeTotalsAndScores(state){
+  const coeffs = state.coeffs || { montante:3, libre:1, seche:4, descendante:2 };
+  const catsTop = ['1','2','3','4','5','6'];
+  const catsBottom = ['Full','Carre','Suite','Plus','Moins',"Yam's"];
+  const allCats = ['1','2','3','4','5','6','Bonus','Full','Carre','Suite','Plus','Moins',"Yam's"];
+  for (const team of state.team_order){
+    const grid = state.grids[team];
+    for (const sub of ['montante','libre','seche','descendante']){
+      let totalHaut = 0;
+      for (const c of catsTop){
+        const v = grid[c][sub];
+        if (v !== null && v !== '' && v !== '✗') totalHaut += parseInt(v,10);
+      }
+      grid['total'][sub] = totalHaut || "";
+      grid['Bonus'][sub] =
+        totalHaut >= 100 ? 60 :
+        totalHaut >=  90 ? 50 :
+        totalHaut >=  80 ? 40 :
+        totalHaut >=  70 ? 30 :
+        totalHaut >=  60 ? 20 : "";
+      let totalBas = 0;
+      for (const c of catsBottom){
+        const v = grid[c][sub];
+        if (v !== null && v !== '' && v !== '✗') totalBas += parseInt(v,10);
+      }
+      const tH = grid['total'][sub] || 0;
+      const b  = grid['Bonus'][sub] || 0;
+      grid['TOTAL'][sub] = totalBas + tH + b;
+    }
+    let s = 0;
+    for (const [col, coeff] of Object.entries(coeffs)){
+      for (const c of allCats){
+        const v = grid[c][col];
+        if (v !== null && v !== '' && v !== '✗') s += parseInt(v,10) * coeff;
+      }
+    }
+    state.scores = state.scores || {};
+    state.scores[team] = s;
+  }
+}
+
+function advanceTurn(state, team){
+  const joueurs = state.teams[team] || [];
+  if (joueurs.length){
+    state.main_index[team] = (state.main_index[team] + 1) % joueurs.length;
+  }
+  state.current_team = (state.current_team + 1) % state.team_order.length;
+}
+
+function applyEditOffline(state, payload){
+  const { team, cat, sub, val } = payload;
+  state.history = state.history || [];
+  state.history.push({
+    team, cat, sub,
+    old_val: state.grids[team][cat][sub]
+  });
+  state.grids[team][cat][sub] = (val === '' ? null : val);
+  computeTotalsAndScores(state);
+  advanceTurn(state, team);
+}
+
+async function applyEdit(payload){
+  try{
+    let r = await fetch(`/update_cell/${GAME_ID}`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    if (!r.ok){
+      // Try to reseed server from local state, then retry once
+      const st = loadLocalState();
+      if (st && navigator.onLine){
+        try{
+          const rs = await fetch(`/sync_state/${GAME_ID}`, {
+            method:'POST',
+            headers:{'Content-Type':'application/json'},
+            body: JSON.stringify(st)
+          });
+          if (rs.ok){
+            r = await fetch(`/update_cell/${GAME_ID}`, {
+              method:'POST',
+              headers:{'Content-Type':'application/json'},
+              body: JSON.stringify(payload)
+            });
+          }
+        }catch(e){}
+      }
+    }
+    if (r.ok){
+      const data = await r.json();
+      if (data && data.success){
+        await fetchState();
+        return;
+      }
+    }
+    // Offline or still failing: apply locally
+    const st2 = loadLocalState();
+    if (st2){ applyEditOffline(st2, payload); saveLocalState(st2); renderAllGrids(st2); }
+  }catch(e){
+    const st = loadLocalState();
+    if (st){ applyEditOffline(st, payload); saveLocalState(st); renderAllGrids(st); }
+  }
+}
+
+
 const CATEGORIES = [
   '1', '2', '3', '4', '5', '6',
   'total', 'Bonus',
@@ -14,7 +129,7 @@ const CATEGORIES = [
   "Yam's", 'TOTAL'
 ];
 const SUB_COLUMNS = ["montante", "libre", "seche", "descendante"];
-const SUB_LABELS = {montante: "↑", libre: "LIB", seche: "SEC", descendante: "↓"};
+const SUB_LABELS = {montante: "\u2191", libre: "LIB", seche: "SEC", descendante: "\u2193"};
 
 const VALID_VALUES = {
   "1": [1, 2, 3, 4, 5].map(n => n * 1),
@@ -33,18 +148,46 @@ const VALID_VALUES = {
 
 document.addEventListener("DOMContentLoaded", fetchState);
 
-function fetchState() {
-    fetch(`/get_state/${GAME_ID}`)
-        .then(r => r.json())
-        .then(data => {
-            console.log("STATE:", data);
-            console.log("team_order:", data.team_order);
-            console.log("current_team:", data.current_team);
-            console.log("grids sample:", data.grids[data.team_order[0]]);	
-
-            renderAllGrids(data);
+async function fetchState(){
+  try{
+    let r = await fetch(`/get_state/${GAME_ID}`);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const data = await r.json();
+    saveLocalState(data);
+    renderAllGrids(data);
+    return;
+  }catch(err){
+    // Server unreachable or returned non-2xx: try to reseed from local, then retry once
+    const cached = loadLocalState();
+    if (cached && navigator.onLine){
+      try{
+        const rs = await fetch(`/sync_state/${GAME_ID}`, {
+          method:'POST',
+          headers:{'Content-Type':'application/json'},
+          body: JSON.stringify(cached)
         });
+        if (rs.ok){
+          let r2 = await fetch(`/get_state/${GAME_ID}`);
+          if (r2.ok){
+            const data2 = await r2.json();
+            saveLocalState(data2);
+            renderAllGrids(data2);
+            return;
+          }
+        }
+      }catch(e){}
+    }
+    // Final fallback: local-only
+    if (cached){
+      renderAllGrids(cached);
+    } else {
+      const gc = document.getElementById('grids-container');
+      if (gc) gc.innerHTML = "<div>Hors ligne et aucune sauvegarde locale disponible.</div>";
+    }
+  }
 }
+
+
 
 function isCellEditable(gameState, team, catIndex, subIndex) {
     const currentTeam = gameState.team_order[gameState.current_team];
@@ -184,6 +327,8 @@ function renderAllGrids(state) {
         });
     });
     addUndoButton();
+
+    saveLocalState(state);
 }
 
 
@@ -219,24 +364,7 @@ popup.querySelectorAll('.yams-popup-btn[data-val]').forEach(btn => {
     btn.onclick = function() {
         let val = btn.getAttribute('data-val');
         closePopup();
-        fetch(`/update_cell/${GAME_ID}`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({ 
-                team: team,
-                cat: CATEGORIES[catIndex],
-                sub: SUB_COLUMNS[subIndex],
-                val: val === '' ? null : parseInt(val, 10)
-            })
-        })
-        .then(r => r.json())
-        .then(data => {
-            if (data.success) {
-                fetchState();
-            } else {
-                alert(data.message || "Erreur lors de l'enregistrement du score.");
-            }
-        });
+        applyEdit({ team: team, cat: CATEGORIES[catIndex], sub: SUB_COLUMNS[subIndex], val: (val === '' ? null : parseInt(val,10)) });
     };
 });
 
@@ -276,6 +404,5 @@ function handleUndo() {
         }
     });
 }
-
 
 

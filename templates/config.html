@@ -44,6 +44,13 @@
       <p>Bienvenue sur l’app des feuilles de score du Yam’s.</p>
       <p>Pour commencer, vous devez configurer votre partie. On vous guide pas à pas !</p>
     </div>
+    <!-- <div class="config-import">
+      <h3 class="config-sub">Ou reprendre une partie existante</h3>
+      <p>Importez un fichier <strong>JSON</strong> précédemment exporté pour reprendre la partie exactement où vous l’aviez laissée.</p>
+      <button type="button" id="cfg-import-btn" class="btn">Importer une partie (JSON)</button>
+      <input type="file" id="cfg-import-file" accept="application/json" style="display:none">
+    </div> -->
+
 
     <form id="config-form" autocomplete="off">
 
@@ -91,6 +98,17 @@
       <h3 class="config-sub">5) Lancer la partie</h3>
       <button type="submit" class="yams-btn">C'est parti 🎲</button>
     </form>
+	
+	<div class="config-import subtle">
+		<button type="button" id="cfg-import-btn-bottom" class="link-btn">
+			<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+			<path fill="currentColor" d="M19 13v6H5v-6H3v8h18v-8h-2zM11 3v10l-4-4H5l7 7l7-7h-2l-4 4V3h-2z"/>
+			</svg>
+    Importer une partie
+	</button>
+	<input type="file" id="cfg-import-file-bottom" accept="application/json" style="display:none">
+	</div>
+	
   </div>
 </div>
 
@@ -218,6 +236,39 @@ document.getElementById('config-form').addEventListener('submit', function(e) {
 </script>
 
 
+
+<script>
+(function(){
+  const btn   = document.getElementById('cfg-import-btn-bottom');
+  const input = document.getElementById('cfg-import-file-bottom');
+  if (!btn || !input) return;
+
+  btn.addEventListener('click', ()=> input.click());
+  input.addEventListener('change', async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const st = JSON.parse(await file.text());
+      if (!st || !st.teams || !st.team_order || !st.grids){
+        alert("Fichier invalide : état incomplet.");
+        return;
+      }
+      // Le serveur crée une nouvelle partie à partir de ce JSON
+      const r = await fetch('/import_state', {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(st)
+      });
+      const data = await r.json();
+      if (r.ok && data && data.success && data.game_id){
+        window.location.href = `/game/${data.game_id}`;
+      } else {
+        alert(data && data.error ? data.error : "Import refusé par le serveur.");
+      }
+    }catch(err){
+      alert("Impossible de lire ce JSON.");
+    }
+  });
+})();
+</script>
 </body>
 </html>
 

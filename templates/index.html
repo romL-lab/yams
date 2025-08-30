@@ -12,6 +12,9 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180.png') }}?v=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	
+	<!-- Android / Chrome -->
+	<meta name="mobile-web-app-capable" content="yes">
 
     <!-- Favicon navigateur desktop -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v=2">
@@ -61,7 +64,17 @@
 	<button class="ico-btn" id="btn-theme" title="Thème" aria-haspopup="dialog" aria-controls="themeModal" aria-label="Choisir un thème">
     <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 0 0 0 18h2.5a2.5 2.5 0 0 0 0-5H14a1 1 0 0 1-1-1c0-.9.5-1.4 1.4-2.3c1-1 1.6-1.7 1.6-3.2A6.5 6.5 0 0 0 9.5 3zM7 8a1.5 1.5 0 1 1 3 0a1.5 1.5 0 0 1-3 0m6-1a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3M6.5 12A1.5 1.5 0 1 1 5 13.5A1.5 1.5 0 0 1 6.5 12"/></svg>
 	</button>
-	</div>
+	
+    <!-- Export JSON -->
+    <button class="ico-btn" id="btn-export" title="Exporter la partie" aria-label="Exporter">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M5 20h14v-2H5v2zM5 4v8h3v6h8v-6h3V4H5zm8 12h-2v-6H8l4-4l4 4h-3v6z"/></svg>
+    </button>
+    <!-- Import JSON -->
+    <button class="ico-btn" id="btn-import" title="Importer une partie" aria-label="Importer">
+      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="currentColor" d="M19 13v6H5v-6H3v8h18v-8h-2zM11 3v10l-4-4H5l7 7l7-7h-2l-4 4V3h-2z"/></svg>
+    </button>
+    <input type="file" id="importFile" accept="application/json" style="display:none">
+</div>
 
 <div id="scores-box"></div>
 <div class="grids-flex" id="grids-container"></div>
@@ -224,5 +237,59 @@
 
 
 
+
+<script>
+(function(){
+  // --- EXPORT avec nom ---
+  document.getElementById('btn-export')?.addEventListener('click', ()=>{
+    const data = localStorage.getItem(`yams:state:${GAME_ID}`) || "{}";
+
+    // Nom précédent mémorisé (ou noms d'équipes comme suggestion)
+    let previous = localStorage.getItem('yams-save-name') || '';
+    try {
+      const st = JSON.parse(data);
+      if (!previous && st && st.teams) previous = Object.keys(st.teams).join('-');
+    } catch(e){}
+
+    const name = prompt("Nom de la sauvegarde :", previous || "yams");
+    if (name) localStorage.setItem('yams-save-name', name);
+
+    // Nettoyage: accents/espaces/ponctuation → slug
+    const strip = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    const safe  = strip((name || 'yams')).trim().toLowerCase()
+                    .replace(/[^a-z0-9-_\s]/gi,'')
+                    .replace(/\s+/g,'-');
+
+    const stamp = new Date().toISOString().slice(0,10); // YYYY-MM-DD
+    const blob = new Blob([data], {type: 'application/json'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safe}-${stamp}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+
+  // --- IMPORT en jeu (ré-ensemence le serveur + refresh) ---
+  const inputFile = document.getElementById('importFile');
+  document.getElementById('btn-import')?.addEventListener('click', ()=> inputFile && inputFile.click());
+  inputFile?.addEventListener('change', async (e)=>{
+    const file = e.target.files?.[0];
+    if(!file) return;
+    try{
+      const st = JSON.parse(await file.text());
+      localStorage.setItem(`yams:state:${GAME_ID}`, JSON.stringify(st));
+      try {
+        await fetch(`/sync_state/${GAME_ID}`, {
+          method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(st)
+        });
+      } catch(e){}
+      if (typeof fetchState === 'function') fetchState();
+      else if (typeof renderAllGrids === 'function') renderAllGrids(st);
+    }catch(err){
+      alert("Fichier invalide.");
+    }
+  });
+})();
+</script>
 </body>
 </html>

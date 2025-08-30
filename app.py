@@ -224,5 +224,39 @@ def reset_game(game_id):
     return jsonify({"success": True})
     
 
+@app.post('/import_state')
+def import_state():
+    """Create a new game from a full client-provided state and return its game_id."""
+    state = request.get_json() or {}
+    # Minimal validation
+    required = ['teams','team_order','grids']
+    if not all(k in state for k in required):
+        return jsonify({'success': False, 'error': 'invalid state'}), 400
+
+    # Ensure defaults that server expects
+    state.setdefault('coeffs', {"montante": 3, "libre": 1, "seche": 4, "descendante": 2})
+    state.setdefault('history', [])
+    state.setdefault('scores', {team: 0 for team in state['teams']})
+    state.setdefault('current_team', 0)
+    state.setdefault('main_index', {team: 0 for team in state['teams']})
+
+    gid = str(uuid.uuid4())
+    games[gid] = state
+    return jsonify({'success': True, 'game_id': gid})
+
+
+@app.post('/sync_state/<game_id>')
+def sync_state(game_id):
+    """Upsert in-memory game state from client.
+    Accepts a full state JSON (teams, team_order, grids, coeffs, main_index, history, scores, current_team, etc.)
+    """
+    data = request.get_json() or {}
+    required = ['teams','team_order','grids']
+    if not all(k in data for k in required):
+        return jsonify({'success': False, 'error': 'invalid state'}), 400
+    games[game_id] = data
+    return jsonify({'success': True})
+
+
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=5000)

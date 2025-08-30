@@ -794,9 +794,70 @@ html[data-theme="photo"] .config-container {
 /* Respecter l’attribut [hidden] pour la modale */
 .theme-modal[hidden] { display: none !important; }
 
-/* Forcer centrage des cellules numériques */
-.grid-table td {
-  text-align: center;
-  vertical-align: middle;
+.grid-table .desc td {
+  text-align: center !important;
 }
 
+/* Centrage strict des colonnes de jeu */
+.grid-table td.descente,
+.grid-table td.montante,
+.grid-table td.sec,
+.grid-table td.libre {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.grid-table td.descente select,
+.grid-table td.descente input,
+.grid-table td.montante select,
+.grid-table td.montante input,
+.grid-table td.sec select,
+.grid-table td.sec input,
+.grid-table td.libre select,
+.grid-table td.libre input {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    margin: 0 auto;
+}
+
+
+/* Import section on config page 
+.config-import { margin: 18px 0; padding: 12px 14px; background:#1e242b; border:1px solid #2c3744; border-radius:12px; }
+.config-import .btn { padding: 10px 14px; border-radius: 10px; background:#2e7dd7; color:#fff; border:none; cursor:pointer; }
+.config-import .btn:hover { filter: brightness(1.05); }*/
+
+/* Lien discret d'import sur la page config */
+/* Lien d’import discret (config) */
+.config-import.subtle {
+  margin: 12px 0 0;
+  text-align: center;
+}
+
+.link-btn{
+  background: none;
+  border: none;
+  color: #b5cfff;               /* cohérent avec tes accents */
+  font-weight: 600;
+  letter-spacing: .2px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 9999px;        /* pilule douce */
+  box-shadow: inset 0 0 0 1px rgba(139,92,246,.25);
+  opacity: .92;
+  cursor: pointer;
+  transition: box-shadow .15s ease, opacity .15s ease, transform .05s ease;
+}
+
+.link-btn:hover{
+  opacity: 1;
+  box-shadow: inset 0 0 0 1px rgba(139,92,246,.45),
+              0 0 0 3px rgba(139,92,246,.15);
+}
+
+.link-btn:active{ transform: translateY(1px); }
+
+.link-btn svg{ width:16px; height:16px; opacity:.85; }
