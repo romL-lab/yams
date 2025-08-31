@@ -242,6 +242,7 @@ def import_state():
 
     gid = str(uuid.uuid4())
     games[gid] = state
+    compute_totals(games[gid])        # ✅ recalcul serveur
     return jsonify({'success': True, 'game_id': gid})
 
 
@@ -255,6 +256,7 @@ def sync_state(game_id):
     if not all(k in data for k in required):
         return jsonify({'success': False, 'error': 'invalid state'}), 400
     games[game_id] = data
+    compute_totals(games[gid])        # ✅ recalcul serveur
     return jsonify({'success': True})
 
 
