@@ -2,227 +2,188 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>YAM's - Feuille de Score</title>
 
-    <!-- Manifest (Android/Chrome) -->
     <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}?v=1">
     <meta name="theme-color" content="#181b20">
-
-    <!-- iOS (ajout à l’écran d’accueil) -->
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180.png') }}?v=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <!-- Favicon navigateur desktop -->
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v=2">
-	<link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon-32.png') }}?v=3" sizes="32x32">
-    <link rel="alternate icon" href="{{ url_for('static', filename='icons/icon-192.png') }}?v=2">
-
-    <!-- Ton CSS -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon-32.png') }}?v=3" sizes="32x32">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body class="game-page">
 
-<div id="splash" role="dialog" aria-modal="true" aria-label="Écran d’introduction">
-  <div class="yui-panel">
-    <img class="yui-mark" alt="" src="{{ url_for('static', filename='icons/icon-192.png') }}">
-    <h1 class="yui-title">YAM’s<br>Feuille de score 4 colonnes</h1>
-    <p class="yui-sub">Parties en équipe, rotation de la première main, saisie guidée. Préparez vos dés 🎲</p>
-    <div class="yui-meta"><span>v1.0</span> • <span>RL</span></div>
-    <button class="yui-btn" id="splash-go">GO!</button>
-  </div>
+<!-- SPLASH — uniquement sur la page de jeu -->
+<div id="splash" role="dialog" aria-modal="true" aria-label="Écran d'introduction">
+    <div class="yui-panel">
+        <img class="yui-mark" alt="" src="{{ url_for('static', filename='icons/icon-192.png') }}">
+        <h1 class="yui-title">YAM's</h1>
+        <p class="yui-sub">Feuille de score — 4 colonnes, parties en équipe</p>
+
+        <div class="yui-rules">
+            <div class="yui-rule">
+                <span class="yui-rule-col">↑</span>
+                <span class="yui-rule-name">Montante ×3</span>
+                <span class="yui-rule-desc">de bas en haut</span>
+            </div>
+            <div class="yui-rule">
+                <span class="yui-rule-col">LIB</span>
+                <span class="yui-rule-name">Libre ×1</span>
+                <span class="yui-rule-desc">ordre libre</span>
+            </div>
+            <div class="yui-rule">
+                <span class="yui-rule-col">SEC</span>
+                <span class="yui-rule-name">Sèche ×4</span>
+                <span class="yui-rule-desc">sans ✗</span>
+            </div>
+            <div class="yui-rule">
+                <span class="yui-rule-col">↓</span>
+                <span class="yui-rule-name">Descendante ×2</span>
+                <span class="yui-rule-desc">de haut en bas</span>
+            </div>
+        </div>
+
+        <div class="yui-meta"><span>v1.0</span> • <span>RL</span></div>
+        <button class="yui-btn" id="splash-go">Jouer 🎲</button>
+    </div>
 </div>
-
-
 
 
 <div class="main-container">
     <h1>Yam's - Feuille de Score</h1>
-	
-	<!-- BARRE D’ACTIONS COMPACTE -->
-	<div class="game-actions" role="toolbar" aria-label="Actions de la partie">
-	<!-- Accueil -->
-	<button class="ico-btn" id="btn-home" title="Retour à l’accueil" onclick="window.location.href='/'" aria-label="Accueil">
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
-	</button>
 
-	<!-- Recommencer -->
-	<button class="ico-btn" id="restart-btn" title="Recommencer (réinitialiser les grilles)" aria-label="Recommencer">
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 6V3l-4 4l4 4V8a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
-	</button>
+    <!-- BARRE D'ACTIONS -->
+    <div class="game-actions" role="toolbar" aria-label="Actions de la partie">
+        <button class="ico-btn" id="btn-home" title="Retour à l'accueil" onclick="window.location.href='/'" aria-label="Accueil">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
+        </button>
 
-	<!-- Annuler dernier coup -->
-	<button class="ico-btn primary" id="undo-btn" title="Annuler le dernier coup" aria-label="Annuler le dernier coup">
-	<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 0 1 6 6a6 6 0 0 1-6 6H6v2h6a8 8 0 0 0 0-16z"/></svg>
-	</button>
+        <button class="ico-btn" id="restart-btn" title="Recommencer" aria-label="Recommencer">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 6V3l-4 4l4 4V8a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/></svg>
+        </button>
 
-	<!-- Ouvrir la popup Thèmes -->
-	<button class="ico-btn" id="btn-theme" title="Thème" aria-haspopup="dialog" aria-controls="themeModal" aria-label="Choisir un thème">
-    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 0 0 0 18h2.5a2.5 2.5 0 0 0 0-5H14a1 1 0 0 1-1-1c0-.9.5-1.4 1.4-2.3c1-1 1.6-1.7 1.6-3.2A6.5 6.5 0 0 0 9.5 3zM7 8a1.5 1.5 0 1 1 3 0a1.5 1.5 0 0 1-3 0m6-1a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3M6.5 12A1.5 1.5 0 1 1 5 13.5A1.5 1.5 0 0 1 6.5 12"/></svg>
-	</button>
-	</div>
+        <button class="ico-btn primary" id="undo-btn" title="Annuler le dernier coup" aria-label="Annuler le dernier coup">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 0 1 6 6a6 6 0 0 1-6 6H6v2h6a8 8 0 0 0 0-16z"/></svg>
+        </button>
 
-<div id="scores-box"></div>
-<div class="grids-flex" id="grids-container"></div>
+        <button class="ico-btn" id="btn-theme" title="Thème" aria-haspopup="dialog" aria-controls="themeModal" aria-label="Choisir un thème">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 0 0 0 18h2.5a2.5 2.5 0 0 0 0-5H14a1 1 0 0 1-1-1c0-.9.5-1.4 1.4-2.3c1-1 1.6-1.7 1.6-3.2A6.5 6.5 0 0 0 9.5 3zM7 8a1.5 1.5 0 1 1 3 0a1.5 1.5 0 0 1-3 0m6-1a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3M6.5 12A1.5 1.5 0 1 1 5 13.5A1.5 1.5 0 0 1 6.5 12"/></svg>
+        </button>
+    </div>
 
+    <div id="scores-box"></div>
+    <div class="grids-flex" id="grids-container"></div>
 </div>
 
-<!-- POPUP / MODAL DE THÈME -->
+
+<!-- MODAL THÈME -->
 <div id="themeModal" class="theme-modal" role="dialog" aria-modal="true" aria-labelledby="themeTitle" hidden>
-  <div class="theme-panel">
-    <div class="theme-head">
-      <h3 id="themeTitle">Choisir un thème</h3>
-      <button class="ico-btn ghost" id="closeTheme" title="Fermer" aria-label="Fermer">
-        <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M18.3 5.71L12 12.01l-6.3-6.3l-1.4 1.41L10.59 13.4l-6.3 6.3l1.41 1.41l6.3-6.29l6.3 6.3l1.41-1.42l-6.29-6.3l6.3-6.29z"/></svg>
-      </button>
+    <div class="theme-panel">
+        <div class="theme-head">
+            <h3 id="themeTitle">Choisir un thème</h3>
+            <button class="ico-btn ghost" id="closeTheme" title="Fermer" aria-label="Fermer">
+                <svg width="18" height="18" viewBox="0 0 24 24"><path fill="currentColor" d="M18.3 5.71L12 12.01l-6.3-6.3l-1.4 1.41L10.59 13.4l-6.3 6.3l1.41 1.41l6.3-6.29l6.3 6.3l1.41-1.42l-6.29-6.3l6.3-6.29z"/></svg>
+            </button>
+        </div>
+        <form id="themeForm" class="theme-list">
+            <label><input type="radio" name="theme" value="classic"> Classic</label>
+            <label><input type="radio" name="theme" value="ocean"> Ocean</label>
+            <label><input type="radio" name="theme" value="solar"> Solar (clair)</label>
+            <label><input type="radio" name="theme" value="emerald"> Emerald</label>
+            <label><input type="radio" name="theme" value="mono"> Mono</label>
+            <label><input type="radio" name="theme" value="photo"> Photo</label>
+        </form>
+        <div class="theme-actions">
+            <button class="btn" id="cancelTheme">Annuler</button>
+            <button class="btn primary" id="applyTheme">Appliquer</button>
+        </div>
     </div>
-    <form id="themeForm" class="theme-list">
-      <label><input type="radio" name="theme" value="classic"> Classic</label>
-      <label><input type="radio" name="theme" value="ocean"> Ocean</label>
-      <label><input type="radio" name="theme" value="solar"> Solar (clair)</label>
-      <label><input type="radio" name="theme" value="emerald"> Emerald</label>
-      <label><input type="radio" name="theme" value="mono"> Mono</label>
-      <label><input type="radio" name="theme" value="photo"> Photo</label>
-    </form>
-    <div class="theme-actions">
-      <button class="btn" id="cancelTheme">Annuler</button>
-      <button class="btn primary" id="applyTheme">Appliquer</button>
-    </div>
-  </div>
 </div>
 
 
 <script>
-    const GAME_ID = "{{ game_id }}";
-	const RESET_URL = "{{ url_for('reset_game', game_id=game_id) }}";
+    const GAME_ID   = "{{ game_id }}";
+    const RESET_URL = "{{ url_for('reset_game', game_id=game_id) }}";
 </script>
 
 <script src="{{ url_for('static', filename='script.js') }}"></script>
 
 <script>
-  document.documentElement.classList.add('splash-lock');
-  document.body.classList.add('splash-lock');
+// ————— Thème au chargement —————
+(function initTheme() {
+    let val = localStorage.getItem('yams-theme');
+    if (!val) {
+        val = 'photo';
+        localStorage.setItem('yams-theme', val);
+    }
+    document.documentElement.setAttribute('data-theme', val);
+})();
 
-  const splash = document.getElementById('splash');
-  const goBtn  = document.getElementById('splash-go');
+// ————— Splash —————
+document.documentElement.classList.add('splash-lock');
+document.body.classList.add('splash-lock');
 
-  function closeSplash(){
-    splash?.classList.add('yui-hide');
+const splash = document.getElementById('splash');
+const goBtn  = document.getElementById('splash-go');
+
+function closeSplash() {
+    splash.classList.add('yui-hide');
     document.documentElement.classList.remove('splash-lock');
     document.body.classList.remove('splash-lock');
-  }
+}
+goBtn.addEventListener('click', closeSplash);
 
-  goBtn?.addEventListener('click', closeSplash);
-</script>
+// ————— Modal Thème —————
+const htmlEl      = document.documentElement;
+const modal       = document.getElementById('themeModal');
+const btnTheme    = document.getElementById('btn-theme');
+const closeTheme  = document.getElementById('closeTheme');
+const cancelTheme = document.getElementById('cancelTheme');
+const applyTheme  = document.getElementById('applyTheme');
+const themeForm   = document.getElementById('themeForm');
 
-<!-- <script>
-  // Applique le thème au <html>
-  const html = document.documentElement;
-  const select = document.getElementById('themeSelect');
-  // valeur en mémoire si déjà choisie
-  const saved = localStorage.getItem('yams-theme') || 'classic';
-  html.setAttribute('data-theme', saved);
-  if (select) select.value = saved;
-
-  select?.addEventListener('change', () => {
-    const val = select.value;
-    html.setAttribute('data-theme', val);
-    localStorage.setItem('yams-theme', val);
-  });
-</script> -->
-
-
-<!-- <script>
-  document.getElementById('restart-btn')?.addEventListener('click', async () => {
-    try {
-      const btn = document.getElementById('restart-btn');
-      btn.disabled = true; btn.textContent = "Réinitialisation…";
-
-      const r = await fetch(RESET_URL, { method: 'POST' });
-      if (!r.ok) throw new Error(await r.text());
-
-      window.location.reload();
-    } catch (e) {
-      alert("Échec de la réinitialisation : " + (e?.message || e));
-      const btn = document.getElementById('restart-btn');
-      btn.disabled = false; btn.textContent = "Recommencer";
-    }
-  });
-</script> -->
-
-<script>
-  // ————— Thèmes via popup —————
-  const htmlEl = document.documentElement;
-  const modal = document.getElementById('themeModal');
-  const btnTheme = document.getElementById('btn-theme');
-  const closeTheme = document.getElementById('closeTheme');
-  const cancelTheme = document.getElementById('cancelTheme');
-  const applyTheme = document.getElementById('applyTheme');
-  const themeForm = document.getElementById('themeForm');
-
-  function openTheme(){
-    // coche le thème courant
+function openTheme() {
+    // Ne pas ouvrir si le splash est encore visible
+    if (!splash.classList.contains('yui-hide')) return;
     const cur = localStorage.getItem('yams-theme') || htmlEl.getAttribute('data-theme') || 'classic';
     [...themeForm.elements.theme].forEach(r => r.checked = (r.value === cur));
     modal.hidden = false;
-  }
-  function closeThemeModal(){ modal.hidden = true; }
+}
+function closeThemeModal() { modal.hidden = true; }
 
-  btnTheme?.addEventListener('click', openTheme);
-  closeTheme?.addEventListener('click', closeThemeModal);
-  cancelTheme?.addEventListener('click', (e)=>{ e.preventDefault(); closeThemeModal(); });
-
-  applyTheme?.addEventListener('click', (e)=>{
+btnTheme.addEventListener('click', openTheme);
+closeTheme.addEventListener('click', closeThemeModal);
+cancelTheme.addEventListener('click', e => { e.preventDefault(); closeThemeModal(); });
+applyTheme.addEventListener('click', e => {
     e.preventDefault();
     const val = [...themeForm.elements.theme].find(r => r.checked)?.value || 'classic';
     htmlEl.setAttribute('data-theme', val);
     localStorage.setItem('yams-theme', val);
     closeThemeModal();
-  });
+});
 
-  // Échap pour fermer
-	window.addEventListener('keydown', (e)=>{ if(!modal.hidden && e.key==='Escape'){ closeThemeModal(); } });
-  
-  // Fermer si clic sur l’arrière-plan
-	modal.addEventListener('click', (e) => {
-	if (e.target === modal) closeThemeModal();
-	});
-	
-	btnTheme?.addEventListener('click', () => {
-	// Si le splash est visible, on ne fait rien
-	if (!splash.classList.contains('yui-hide')) return;
-	openTheme();
-	});
+// Fermer sur Échap ou clic arrière-plan
+window.addEventListener('keydown', e => { if (!modal.hidden && e.key === 'Escape') closeThemeModal(); });
+modal.addEventListener('click', e => { if (e.target === modal) closeThemeModal(); });
 
-  // ————— Recommencer (ta route / reset est déjà en place) —————
-  document.getElementById('restart-btn')?.addEventListener('click', async () => {
+// ————— Recommencer —————
+document.getElementById('restart-btn').addEventListener('click', async () => {
     const btn = document.getElementById('restart-btn');
-    try{
-      btn.disabled = true; btn.title = "Réinitialisation…";
-      <!-- const r = await fetch("{{ url_for('reset_game', game_id=game_id) }}", { method:'POST' }); -->
-	  const r = await fetch(RESET_URL, { method:'POST' });
-      if(!r.ok) throw new Error(await r.text());
-      window.location.reload();
-    }catch(e){
-      alert("Échec de la réinitialisation : " + (e?.message || e));
-      btn.disabled = false; btn.title = "Recommencer";
+    try {
+        btn.disabled = true;
+        const r = await fetch(RESET_URL, { method: 'POST' });
+        if (!r.ok) throw new Error(await r.text());
+        window.location.reload();
+    } catch (e) {
+        alert('Échec de la réinitialisation : ' + (e?.message || e));
+        btn.disabled = false;
     }
-  });
-
-	// ————— Thème courant au chargement —————
-	(function initTheme(){
-    let val = localStorage.getItem('yams-theme');
-    if (!val) {
-        val = 'photo'; // 👈 par défaut : photo
-        localStorage.setItem('yams-theme', val);
-    }
-    htmlEl.setAttribute('data-theme', val);
-})();
-
+});
 </script>
-
-
 
 </body>
 </html>
