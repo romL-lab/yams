@@ -152,6 +152,9 @@ const VALID_VALUES = {
 // ============================================================
 // FETCH STATE
 // ============================================================
+// État courant (nécessaire pour la logique Plus/Moins cross-cellules)
+let currentState = null;
+
 document.addEventListener('DOMContentLoaded', fetchState);
 
 async function fetchState() {
@@ -246,6 +249,7 @@ function renderAllGrids(state) {
     }
 
     window.currentTeamName = state.team_order[state.current_team];
+    currentState = state;
 
     let html = '<div class="grids-flex">';
     for (const teamName of state.team_order) {
@@ -339,8 +343,44 @@ function renderAllGrids(state) {
 // POPUP SAISIE — utilise les classes CSS (pas de styles inline)
 // ============================================================
 function openEditPopup(team, catIndex, subIndex, oldValue) {
-    const cat         = CATEGORIES[catIndex];
-    const validValues = VALID_VALUES[cat] || Array.from({ length: 101 }, (_, k) => k);
+    const cat = CATEGORIES[catIndex];
+    const sub = SUB_COLUMNS[subIndex];
+
+    // ── Calcul des valeurs valides ───────────────────────────
+    let validValues;
+    let constraintMsg = '';
+
+    if (cat === 'Plus' || cat === 'Moins') {
+        const BASE = Array.from({ length: 10 }, (_, i) => i + 21); // 21..30
+        const grille = currentState?.grids[team] || {};
+
+        if (cat === 'Moins') {
+            // Moins doit être < Plus (si Plus déjà rempli)
+            const plusRaw = grille['Plus']?.[sub];
+            const plusVal = (plusRaw !== null && plusRaw !== undefined && plusRaw !== '' && plusRaw !== 0 && plusRaw !== '0' && plusRaw !== '✗')
+                ? parseInt(plusRaw, 10) : null;
+            if (plusVal !== null) {
+                validValues = BASE.filter(v => v < plusVal);
+                constraintMsg = `(doit être < ${plusVal})`;
+            } else {
+                validValues = BASE;
+            }
+        } else {
+            // Plus doit être > Moins (si Moins déjà rempli)
+            const moinsRaw = grille['Moins']?.[sub];
+            const moinsVal = (moinsRaw !== null && moinsRaw !== undefined && moinsRaw !== '' && moinsRaw !== 0 && moinsRaw !== '0' && moinsRaw !== '✗')
+                ? parseInt(moinsRaw, 10) : null;
+            if (moinsVal !== null) {
+                validValues = BASE.filter(v => v > moinsVal);
+                constraintMsg = `(doit être > ${moinsVal})`;
+            } else {
+                validValues = BASE;
+            }
+        }
+    } else {
+        validValues = VALID_VALUES[cat] || Array.from({ length: 101 }, (_, k) => k);
+    }
+    // ────────────────────────────────────────────────────────
 
     let buttonsHtml = `<button type="button" class="yams-popup-btn yams-popup-zero" data-val="0">✗ Zéro</button>`;
     validValues.forEach(v => {
@@ -353,6 +393,7 @@ function openEditPopup(team, catIndex, subIndex, oldValue) {
         <div class="yams-popup-panel">
             <div class="yams-popup-title">
                 <strong>${cat}</strong> &mdash; colonne <strong>${SUB_LABELS[SUB_COLUMNS[subIndex]]}</strong>
+                ${constraintMsg ? `<span class="yams-popup-constraint">${constraintMsg}</span>` : ''}
             </div>
             <div class="yams-popup-values">${buttonsHtml}</div>
             <div class="yams-popup-footer">
