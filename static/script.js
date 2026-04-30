@@ -2,6 +2,128 @@ if (!GAME_ID) {
     alert("ID de partie manquant dans l'URL !");
 }
 
+// ============================================================
+// OFFLINE — autosave localStorage
+// ============================================================
+const LS_KEY_STATE = `yams:state:${GAME_ID}`;
+
+function saveLocalState(state) {
+    try { localStorage.setItem(LS_KEY_STATE, JSON.stringify(state)); } catch (e) {}
+}
+function loadLocalState() {
+    try { return JSON.parse(localStorage.getItem(LS_KEY_STATE) || 'null'); } catch (e) { return null; }
+}
+
+// Recalcul côté client (miroir de compute_totals dans app.py)
+function computeTotalsAndScores(state) {
+    const coeffs     = state.coeffs || { montante: 3, libre: 1, seche: 4, descendante: 2 };
+    const catsTop    = ['1', '2', '3', '4', '5', '6'];
+    const catsBottom = ['Full', 'Carre', 'Suite', 'Plus', 'Moins', "Yam's"];
+    const allCats    = [...catsTop, 'Bonus', ...catsBottom];
+
+    for (const team of state.team_order) {
+        const grid = state.grids[team];
+        for (const sub of ['montante', 'libre', 'seche', 'descendante']) {
+            let totalHaut = 0;
+            for (const c of catsTop) {
+                const v = grid[c][sub];
+                if (v !== null && v !== '' && v !== '✗') totalHaut += parseInt(v, 10);
+            }
+            grid['total'][sub] = totalHaut || '';
+            grid['Bonus'][sub] =
+                totalHaut >= 100 ? 60 :
+                totalHaut >= 90  ? 50 :
+                totalHaut >= 80  ? 40 :
+                totalHaut >= 70  ? 30 :
+                totalHaut >= 60  ? 20 : '';
+
+            let totalBas = 0;
+            for (const c of catsBottom) {
+                const v = grid[c][sub];
+                if (v !== null && v !== '' && v !== '✗') totalBas += parseInt(v, 10);
+            }
+            grid['TOTAL'][sub] = totalBas + (grid['total'][sub] || 0) + (grid['Bonus'][sub] || 0);
+        }
+
+        let s = 0;
+        for (const [col, coeff] of Object.entries(coeffs)) {
+            for (const c of allCats) {
+                const v = grid[c][col];
+                if (v !== null && v !== '' && v !== '✗') s += parseInt(v, 10) * coeff;
+            }
+        }
+        state.scores = state.scores || {};
+        state.scores[team] = s;
+    }
+}
+
+function advanceTurn(state, team) {
+    const joueurs = state.teams[team] || [];
+    if (joueurs.length) {
+        state.main_index[team] = (state.main_index[team] + 1) % joueurs.length;
+    }
+    state.current_team = (state.current_team + 1) % state.team_order.length;
+}
+
+function applyEditOffline(state, payload) {
+    const { team, cat, sub, val } = payload;
+    state.history = state.history || [];
+    state.history.push({ team, cat, sub, old_val: state.grids[team][cat][sub] });
+    state.grids[team][cat][sub] = (val === '' ? null : val);
+    computeTotalsAndScores(state);
+    advanceTurn(state, team);
+}
+
+// Applique un coup : essaie le serveur, se rabat sur local si hors ligne
+async function applyEdit(payload) {
+    try {
+        let r = await fetch(`/update_cell/${GAME_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        if (!r.ok) {
+            // Serveur a redémarré : on le re-sème depuis le localStorage
+            const st = loadLocalState();
+            if (st && navigator.onLine) {
+                try {
+                    const rs = await fetch(`/sync_state/${GAME_ID}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(st)
+                    });
+                    if (rs.ok) {
+                        r = await fetch(`/update_cell/${GAME_ID}`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(payload)
+                        });
+                    }
+                } catch (e) {}
+            }
+        }
+
+        if (r.ok) {
+            const data = await r.json();
+            if (data?.success) { await fetchState(); return; }
+        }
+
+        // Toujours en échec : mode offline
+        const st2 = loadLocalState();
+        if (st2) { applyEditOffline(st2, payload); saveLocalState(st2); renderAllGrids(st2); }
+
+    } catch (e) {
+        // Réseau coupé
+        const st = loadLocalState();
+        if (st) { applyEditOffline(st, payload); saveLocalState(st); renderAllGrids(st); }
+    }
+}
+
+
+// ============================================================
+// CONSTANTES
+// ============================================================
 const CATEGORIES = [
     '1', '2', '3', '4', '5', '6',
     'total', 'Bonus',
@@ -26,21 +148,62 @@ const VALID_VALUES = {
     "Yam's": [65, 70, 75, 80, 85, 90]
 };
 
+
+// ============================================================
+// FETCH STATE
+// ============================================================
 document.addEventListener('DOMContentLoaded', fetchState);
 
-function fetchState() {
-    fetch(`/get_state/${GAME_ID}`)
-        .then(r => r.json())
-        .then(data => renderAllGrids(data));
+async function fetchState() {
+    try {
+        let r = await fetch(`/get_state/${GAME_ID}`);
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        const data = await r.json();
+        saveLocalState(data);
+        renderAllGrids(data);
+        return;
+    } catch (err) {
+        // Serveur hors ligne : on essaie de le re-semer
+        const cached = loadLocalState();
+        if (cached && navigator.onLine) {
+            try {
+                const rs = await fetch(`/sync_state/${GAME_ID}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(cached)
+                });
+                if (rs.ok) {
+                    const r2 = await fetch(`/get_state/${GAME_ID}`);
+                    if (r2.ok) {
+                        const data2 = await r2.json();
+                        saveLocalState(data2);
+                        renderAllGrids(data2);
+                        return;
+                    }
+                }
+            } catch (e) {}
+        }
+        // Dernier recours : local uniquement
+        if (cached) {
+            renderAllGrids(cached);
+        } else {
+            const gc = document.getElementById('grids-container');
+            if (gc) gc.innerHTML = '<div>Hors ligne et aucune sauvegarde locale disponible.</div>';
+        }
+    }
 }
 
+
+// ============================================================
+// LOGIQUE GRILLE
+// ============================================================
 function isCellEditable(gameState, team, catIndex, subIndex) {
-    const currentTeam = gameState.team_order[gameState.current_team];
-    const isTeamActive = team === currentTeam;
-    const grille = gameState.grids[team] || {};
-    const cat = CATEGORIES[catIndex];
-    const sub = SUB_COLUMNS[subIndex];
-    const valeurCellule = grille[cat]?.[sub];
+    const currentTeam    = gameState.team_order[gameState.current_team];
+    const isTeamActive   = team === currentTeam;
+    const grille         = gameState.grids[team] || {};
+    const cat            = CATEGORIES[catIndex];
+    const sub            = SUB_COLUMNS[subIndex];
+    const valeurCellule  = grille[cat]?.[sub];
 
     const nonEditableCats = ['total', 'Bonus', 'TOTAL'];
     if (nonEditableCats.includes(cat)) return false;
@@ -53,10 +216,7 @@ function isCellEditable(gameState, team, catIndex, subIndex) {
             const thisCat = CATEGORIES[k];
             if (nonEditableCats.includes(thisCat)) continue;
             const cell = grille[thisCat]?.[sub];
-            if (cell === null || cell === undefined || cell === '' || cell === '0') {
-                nextEditable = k;
-                break;
-            }
+            if (cell === null || cell === undefined || cell === '' || cell === '0') { nextEditable = k; break; }
         }
         return catIndex === nextEditable;
     }
@@ -67,10 +227,7 @@ function isCellEditable(gameState, team, catIndex, subIndex) {
             const thisCat = CATEGORIES[k];
             if (nonEditableCats.includes(thisCat)) continue;
             const cell = grille[thisCat]?.[sub];
-            if (cell === null || cell === undefined || cell === '' || cell === '0') {
-                nextEditable = k;
-                break;
-            }
+            if (cell === null || cell === undefined || cell === '' || cell === '0') { nextEditable = k; break; }
         }
         return catIndex === nextEditable;
     }
@@ -79,6 +236,9 @@ function isCellEditable(gameState, team, catIndex, subIndex) {
 }
 
 
+// ============================================================
+// RENDU
+// ============================================================
 function renderAllGrids(state) {
     if (!state || !state.teams) {
         document.getElementById('grids-container').innerHTML = '<div>Aucune partie en cours.</div>';
@@ -163,19 +323,21 @@ function renderAllGrids(state) {
 
     document.querySelectorAll('td.editable').forEach(td => {
         td.addEventListener('click', () => {
-            const team     = td.dataset.team;
-            const catIndex = parseInt(td.dataset.catIndex, 10);
-            const subIndex = parseInt(td.dataset.subIndex, 10);
-            openEditPopup(team, catIndex, subIndex, td.innerText);
+            openEditPopup(td.dataset.team, parseInt(td.dataset.catIndex, 10), parseInt(td.dataset.subIndex, 10), td.innerText);
         });
     });
 
     // Attache le handler undo sur le bouton déjà présent dans le HTML
     const undoBtn = document.getElementById('undo-btn');
     if (undoBtn) undoBtn.onclick = handleUndo;
+
+    saveLocalState(state);
 }
 
 
+// ============================================================
+// POPUP SAISIE — utilise les classes CSS (pas de styles inline)
+// ============================================================
 function openEditPopup(team, catIndex, subIndex, oldValue) {
     const cat         = CATEGORIES[catIndex];
     const validValues = VALID_VALUES[cat] || Array.from({ length: 101 }, (_, k) => k);
@@ -192,9 +354,7 @@ function openEditPopup(team, catIndex, subIndex, oldValue) {
             <div class="yams-popup-title">
                 <strong>${cat}</strong> &mdash; colonne <strong>${SUB_LABELS[SUB_COLUMNS[subIndex]]}</strong>
             </div>
-            <div class="yams-popup-values">
-                ${buttonsHtml}
-            </div>
+            <div class="yams-popup-values">${buttonsHtml}</div>
             <div class="yams-popup-footer">
                 <button type="button" class="yams-popup-btn yams-popup-cancel">Annuler</button>
             </div>
@@ -207,20 +367,11 @@ function openEditPopup(team, catIndex, subIndex, oldValue) {
         btn.onclick = function () {
             const val = btn.getAttribute('data-val');
             closePopup();
-            fetch(`/update_cell/${GAME_ID}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    team,
-                    cat:  CATEGORIES[catIndex],
-                    sub:  SUB_COLUMNS[subIndex],
-                    val:  val === '' ? null : parseInt(val, 10)
-                })
-            })
-            .then(r => r.json())
-            .then(data => {
-                if (data.success) fetchState();
-                else alert(data.message || "Erreur lors de l'enregistrement.");
+            applyEdit({
+                team,
+                cat:  CATEGORIES[catIndex],
+                sub:  SUB_COLUMNS[subIndex],
+                val:  val === '' ? null : parseInt(val, 10)
             });
         };
     });
@@ -228,12 +379,13 @@ function openEditPopup(team, catIndex, subIndex, oldValue) {
     popup.querySelector('.yams-popup-cancel').onclick = closePopup;
     popup.addEventListener('click', e => { if (e.target === popup) closePopup(); });
 
-    function closePopup() {
-        document.body.removeChild(popup);
-    }
+    function closePopup() { document.body.removeChild(popup); }
 }
 
 
+// ============================================================
+// UNDO
+// ============================================================
 function handleUndo() {
     fetch(`/undo/${GAME_ID}`, {
         method: 'POST',
