@@ -484,6 +484,14 @@ label, select, input {
     color: #b5cdf7;
 }
 
+.yams-popup-constraint {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.85em;
+    color: #ffd647;
+    font-weight: 600;
+}
+
 .yams-popup-values {
     display: flex;
     flex-wrap: wrap;
