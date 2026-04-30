@@ -348,11 +348,19 @@ function handleUndo() {
 // ============================================================
 function triggerYamsFireworks() {
     if (!document.getElementById('yams-fx-style')) {
+        // Charger Lilita One (fonte grasse comics/street)
+        if (!document.getElementById('yams-font-link')) {
+            const lk = document.createElement('link');
+            lk.id   = 'yams-font-link';
+            lk.rel  = 'stylesheet';
+            lk.href = 'https://fonts.googleapis.com/css2?family=Lilita+One&display=swap';
+            document.head.appendChild(lk);
+        }
         const s = document.createElement('style');
         s.id = 'yams-fx-style';
         s.textContent = `@keyframes yamsMsgIn {
-            0%  { transform:translate(-50%,-50%) scale(0) rotate(-8deg); opacity:0; }
-            65% { transform:translate(-50%,-50%) scale(1.1) rotate(2deg); opacity:1; }
+            0%  { transform:translate(-50%,-50%) scale(0) rotate(-6deg); opacity:0; }
+            60% { transform:translate(-50%,-50%) scale(1.08) rotate(1.5deg); opacity:1; }
             100%{ transform:translate(-50%,-50%) scale(1) rotate(0deg); opacity:1; }
         }`;
         document.head.appendChild(s);
@@ -379,20 +387,39 @@ function triggerYamsFireworks() {
     const msg = document.createElement('div');
     msg.innerHTML = `YAM'S&nbsp;!<br><span style="display:inline-flex;gap:3px;align-items:flex-end;">${diceSpans}</span>`;
 
-    // Street art : jaune + contour rouge + extrusion 3D
+    // Style comics/street art : Lilita One, contour 8 directions + extrusion franche bas-droite
+    const outlineRed = '#cc1100';
+    const extrude = [
+        '4px 4px 0 #aa0000',
+        '7px 7px 0 #8a0000',
+        '10px 10px 0 #6a0000',
+        '13px 13px 0 #4a0000',
+        '16px 16px 18px rgba(0,0,0,.65)'
+    ].join(',');
+    // Outline 8 directions + extrusion
+    const shadow = [
+        `-3px -3px 0 ${outlineRed}`,
+        ` 3px -3px 0 ${outlineRed}`,
+        `-3px  3px 0 ${outlineRed}`,
+        ` 3px  3px 0 ${outlineRed}`,
+        ` 0px -4px 0 ${outlineRed}`,
+        ` 0px  4px 0 ${outlineRed}`,
+        `-4px  0px 0 ${outlineRed}`,
+        ` 4px  0px 0 ${outlineRed}`,
+        extrude
+    ].join(',');
+
     const styles = [
         'position:absolute','top:42%','left:50%',
         'transform:translate(-50%,-50%) scale(0)',
-        "font-family:'Rajdhani','Impact','Arial Black',sans-serif",
-        'font-size:clamp(50px,10.5vw,96px)','font-weight:700',
+        "font-family:'Lilita One','Impact','Arial Black',sans-serif",
+        'font-size:clamp(52px,11vw,100px)','font-weight:400',
         'color:#ffd647',
-        '-webkit-text-stroke:4px #cc1100',
-        'paint-order:stroke fill',
-        'text-align:center','line-height:1.18','letter-spacing:.04em',
-        'text-shadow:3px 3px 0 #bb0000,6px 6px 0 #960000,9px 9px 0 #720000,12px 12px 0 #4e0000,15px 15px 20px rgba(0,0,0,.7)',
+        'text-align:center','line-height:1.2','letter-spacing:.03em',
+        `text-shadow:${shadow}`,
         'animation:yamsMsgIn .52s .12s cubic-bezier(.34,1.56,.64,1) both',
         'pointer-events:none',
-        'filter:drop-shadow(0 0 22px rgba(255,214,71,.5))'
+        'filter:drop-shadow(0 0 20px rgba(255,214,71,.45))'
     ];
     msg.style.cssText = styles.join(';');
 
