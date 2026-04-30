@@ -407,7 +407,9 @@ function openEditPopup(team, catIndex, subIndex, oldValue) {
     popup.querySelectorAll('.yams-popup-btn[data-val]').forEach(btn => {
         btn.onclick = function () {
             const val = btn.getAttribute('data-val');
+            const isYams = cat === "Yam's" && val !== '0' && val !== null;
             closePopup();
+            if (isYams) setTimeout(triggerYamsFireworks, 280);
             applyEdit({
                 team,
                 cat:  CATEGORIES[catIndex],
@@ -438,4 +440,140 @@ function handleUndo() {
         if (data.success) fetchState();
         else alert(data.message || 'Aucun coup à annuler.');
     });
+}
+
+
+// ============================================================
+// FEUX D'ARTIFICE — déclenché sur un Yam's
+// ============================================================
+function triggerYamsFireworks() {
+
+    // Inject keyframes once
+    if (!document.getElementById('yams-fx-style')) {
+        const s = document.createElement('style');
+        s.id = 'yams-fx-style';
+        s.textContent = `
+            @keyframes yamsMsgIn {
+                0%   { transform:translate(-50%,-50%) scale(0) rotate(-8deg); opacity:0; }
+                60%  { transform:translate(-50%,-50%) scale(1.12) rotate(2deg); opacity:1; }
+                100% { transform:translate(-50%,-50%) scale(1) rotate(0deg); opacity:1; }
+            }
+        `;
+        document.head.appendChild(s);
+    }
+
+    // Overlay
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99998;pointer-events:none;overflow:hidden;';
+
+    // Canvas
+    const canvas = document.createElement('canvas');
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
+
+    // Message
+    const msg = document.createElement('div');
+    msg.innerHTML = `YAM'S&nbsp;!<br><span style="font-size:.55em;letter-spacing:.06em;">🎲🎲🎲</span>`;
+    msg.style.cssText = `
+        position:absolute;top:42%;left:50%;
+        transform:translate(-50%,-50%) scale(0);
+        font-family:'Rajdhani','Segoe UI',sans-serif;
+        font-size:clamp(52px,11vw,100px);font-weight:700;
+        color:#ffd647;text-align:center;line-height:1.1;
+        text-shadow:0 0 30px rgba(255,214,71,.9),0 0 70px rgba(255,214,71,.5),0 4px 0 rgba(0,0,0,.4);
+        animation:yamsMsgIn .5s .15s cubic-bezier(.34,1.56,.64,1) both;
+        pointer-events:none;
+    `;
+
+    overlay.appendChild(canvas);
+    overlay.appendChild(msg);
+    document.body.appendChild(overlay);
+
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const COLORS = ['#ffd647','#22d3ee','#a78bfa','#f87171','#34d399','#fb923c','#ffffff','#fbbf24'];
+    const particles = [];
+
+    function burst(x, y, n = 70) {
+        for (let i = 0; i < n; i++) {
+            const angle = (Math.PI * 2 * i / n) + (Math.random() - .5) * .4;
+            const spd   = 4 + Math.random() * 9;
+            particles.push({
+                x, y,
+                vx: Math.cos(angle) * spd,
+                vy: Math.sin(angle) * spd - 1.5,
+                color: COLORS[Math.floor(Math.random() * COLORS.length)],
+                size:  2 + Math.random() * 4.5,
+                life:  1,
+                decay: .013 + Math.random() * .017,
+                grav:  .13 + Math.random() * .08,
+                rect:  Math.random() > .45,
+                rot:   Math.random() * Math.PI * 2,
+                rotV:  (Math.random() - .5) * .25,
+            });
+        }
+    }
+
+    // Burst schedule
+    const schedule = [
+        [0,    W * .5, H * .35, 80],
+        [180,  W * .25, H * .3, 60],
+        [180,  W * .75, H * .3, 60],
+        [420,  W * .15, H * .55, 50],
+        [420,  W * .85, H * .55, 50],
+        [650,  W * .5,  H * .2,  70],
+        [900,  W * .35, H * .45, 55],
+        [900,  W * .65, H * .45, 55],
+        [1200, W * .5,  H * .38, 80],
+    ];
+
+    const t0 = performance.now();
+    schedule.forEach(([delay, x, y, n]) => {
+        setTimeout(() => burst(x, y, n), delay);
+    });
+
+    const TOTAL = 3800;
+
+    function draw(now) {
+        const elapsed = now - t0;
+        ctx.clearRect(0, 0, W, H);
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x  += p.vx;  p.y  += p.vy;
+            p.vy += p.grav; p.vx *= .98;
+            p.life -= p.decay;
+            p.rot  += p.rotV;
+            if (p.life <= 0) { particles.splice(i, 1); continue; }
+
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, p.life * 1.4);
+            ctx.fillStyle   = p.color;
+            ctx.translate(p.x, p.y);
+            ctx.rotate(p.rot);
+            if (p.rect) {
+                ctx.fillRect(-p.size, -p.size * .4, p.size * 2, p.size * .8);
+            } else {
+                ctx.beginPath();
+                ctx.arc(0, 0, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        // Fade message out after 2.2s
+        if (elapsed > 2200) {
+            msg.style.opacity = Math.max(0, 1 - (elapsed - 2200) / 900).toFixed(3);
+        }
+
+        if (elapsed < TOTAL || particles.length > 0) {
+            requestAnimationFrame(draw);
+        } else {
+            overlay.remove();
+        }
+    }
+
+    requestAnimationFrame(draw);
+    setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, TOTAL + 500);
 }
