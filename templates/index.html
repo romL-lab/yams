@@ -10,6 +10,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='icons/icon-180.png') }}?v=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}?v=2">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='icons/favicon-32.png') }}?v=3" sizes="32x32">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
@@ -17,7 +18,7 @@
 
 <body class="game-page">
 
-<!-- SPLASH — uniquement sur la page de jeu -->
+<!-- SPLASH -->
 <div id="splash" role="dialog" aria-modal="true" aria-label="Écran d'introduction">
     <div class="yui-panel">
         <img class="yui-mark" alt="" src="{{ url_for('static', filename='icons/icon-192.png') }}">
@@ -38,7 +39,7 @@
             <div class="yui-rule">
                 <span class="yui-rule-col">SEC</span>
                 <span class="yui-rule-name">Sèche ×4</span>
-                <span class="yui-rule-desc">sans ✗</span>
+                <span class="yui-rule-desc">1er lancé · 1ère main</span>
             </div>
             <div class="yui-rule">
                 <span class="yui-rule-col">↓</span>
@@ -47,7 +48,7 @@
             </div>
         </div>
 
-        <div class="yui-meta"><span>v1.0</span> • <span>RL</span></div>
+        <div class="yui-meta"><span>v1.1</span> • <span>RL</span></div>
         <button class="yui-btn" id="splash-go">Jouer 🎲</button>
     </div>
 </div>
@@ -58,6 +59,7 @@
 
     <!-- BARRE D'ACTIONS -->
     <div class="game-actions" role="toolbar" aria-label="Actions de la partie">
+
         <button class="ico-btn" id="btn-home" title="Retour à l'accueil" onclick="window.location.href='/'" aria-label="Accueil">
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3z"/></svg>
         </button>
@@ -70,9 +72,19 @@
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V1L7 6l5 5V7a6 6 0 0 1 6 6a6 6 0 0 1-6 6H6v2h6a8 8 0 0 0 0-16z"/></svg>
         </button>
 
+        <button class="ico-btn" id="btn-export" title="Exporter la partie (JSON)" aria-label="Exporter">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 20h14v-2H5v2zM5 4v8h3v6h8v-6h3V4H5zm8 12h-2v-6H8l4-4l4 4h-3v6z"/></svg>
+        </button>
+
+        <button class="ico-btn" id="btn-import" title="Importer une partie (JSON)" aria-label="Importer">
+            <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 13v6H5v-6H3v8h18v-8h-2zM11 3v10l-4-4H5l7 7l7-7h-2l-4 4V3h-2z"/></svg>
+        </button>
+        <input type="file" id="importFile" accept="application/json" style="display:none">
+
         <button class="ico-btn" id="btn-theme" title="Thème" aria-haspopup="dialog" aria-controls="themeModal" aria-label="Choisir un thème">
             <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 0 0 0 18h2.5a2.5 2.5 0 0 0 0-5H14a1 1 0 0 1-1-1c0-.9.5-1.4 1.4-2.3c1-1 1.6-1.7 1.6-3.2A6.5 6.5 0 0 0 9.5 3zM7 8a1.5 1.5 0 1 1 3 0a1.5 1.5 0 0 1-3 0m6-1a1.5 1.5 0 1 1 0 3a1.5 1.5 0 0 1 0-3M6.5 12A1.5 1.5 0 1 1 5 13.5A1.5 1.5 0 0 1 6.5 12"/></svg>
         </button>
+
     </div>
 
     <div id="scores-box"></div>
@@ -116,10 +128,7 @@
 // ————— Thème au chargement —————
 (function initTheme() {
     let val = localStorage.getItem('yams-theme');
-    if (!val) {
-        val = 'photo';
-        localStorage.setItem('yams-theme', val);
-    }
+    if (!val) { val = 'photo'; localStorage.setItem('yams-theme', val); }
     document.documentElement.setAttribute('data-theme', val);
 })();
 
@@ -128,26 +137,19 @@ document.documentElement.classList.add('splash-lock');
 document.body.classList.add('splash-lock');
 
 const splash = document.getElementById('splash');
-const goBtn  = document.getElementById('splash-go');
-
-function closeSplash() {
+document.getElementById('splash-go').addEventListener('click', function () {
     splash.classList.add('yui-hide');
     document.documentElement.classList.remove('splash-lock');
     document.body.classList.remove('splash-lock');
-}
-goBtn.addEventListener('click', closeSplash);
+});
 
 // ————— Modal Thème —————
 const htmlEl      = document.documentElement;
 const modal       = document.getElementById('themeModal');
 const btnTheme    = document.getElementById('btn-theme');
-const closeTheme  = document.getElementById('closeTheme');
-const cancelTheme = document.getElementById('cancelTheme');
-const applyTheme  = document.getElementById('applyTheme');
 const themeForm   = document.getElementById('themeForm');
 
 function openTheme() {
-    // Ne pas ouvrir si le splash est encore visible
     if (!splash.classList.contains('yui-hide')) return;
     const cur = localStorage.getItem('yams-theme') || htmlEl.getAttribute('data-theme') || 'classic';
     [...themeForm.elements.theme].forEach(r => r.checked = (r.value === cur));
@@ -156,17 +158,15 @@ function openTheme() {
 function closeThemeModal() { modal.hidden = true; }
 
 btnTheme.addEventListener('click', openTheme);
-closeTheme.addEventListener('click', closeThemeModal);
-cancelTheme.addEventListener('click', e => { e.preventDefault(); closeThemeModal(); });
-applyTheme.addEventListener('click', e => {
+document.getElementById('closeTheme').addEventListener('click', closeThemeModal);
+document.getElementById('cancelTheme').addEventListener('click', e => { e.preventDefault(); closeThemeModal(); });
+document.getElementById('applyTheme').addEventListener('click', e => {
     e.preventDefault();
     const val = [...themeForm.elements.theme].find(r => r.checked)?.value || 'classic';
     htmlEl.setAttribute('data-theme', val);
     localStorage.setItem('yams-theme', val);
     closeThemeModal();
 });
-
-// Fermer sur Échap ou clic arrière-plan
 window.addEventListener('keydown', e => { if (!modal.hidden && e.key === 'Escape') closeThemeModal(); });
 modal.addEventListener('click', e => { if (e.target === modal) closeThemeModal(); });
 
@@ -177,11 +177,64 @@ document.getElementById('restart-btn').addEventListener('click', async () => {
         btn.disabled = true;
         const r = await fetch(RESET_URL, { method: 'POST' });
         if (!r.ok) throw new Error(await r.text());
+        localStorage.removeItem(`yams:state:${GAME_ID}`);
         window.location.reload();
     } catch (e) {
         alert('Échec de la réinitialisation : ' + (e?.message || e));
         btn.disabled = false;
     }
+});
+
+// ————— Export JSON —————
+document.getElementById('btn-export').addEventListener('click', () => {
+    const data = localStorage.getItem(`yams:state:${GAME_ID}`) || '{}';
+
+    let previous = localStorage.getItem('yams-save-name') || '';
+    try {
+        const st = JSON.parse(data);
+        if (!previous && st?.teams) previous = Object.keys(st.teams).join('-');
+    } catch (e) {}
+
+    const name = prompt('Nom de la sauvegarde :', previous || 'yams');
+    if (!name) return;
+    localStorage.setItem('yams-save-name', name);
+
+    const safe = name.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .trim().toLowerCase().replace(/[^a-z0-9\-_\s]/gi, '').replace(/\s+/g, '-');
+    const stamp = new Date().toISOString().slice(0, 10);
+
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${safe}-${stamp}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+});
+
+// ————— Import JSON —————
+const importFile = document.getElementById('importFile');
+document.getElementById('btn-import').addEventListener('click', () => importFile.click());
+importFile.addEventListener('change', async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+        const st = JSON.parse(await file.text());
+        // Demande au serveur de créer une nouvelle partie à partir de cet état
+        const r = await fetch('/import_state', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(st)
+        });
+        const data = await r.json();
+        if (data.success) {
+            window.location.href = `/game/${data.game_id}`;
+        } else {
+            alert('Erreur lors de l\'import : ' + (data.error || 'fichier invalide'));
+        }
+    } catch (err) {
+        alert('Fichier JSON invalide.');
+    }
+    importFile.value = '';
 });
 </script>
 
